@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "171680808501",
+    "project_id": "dolabim-da043",
+    "storage_bucket": "dolabim-da043.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:171680808501:android:261f411c24c3b23a0d7b7c",
+        "android_client_info": {
+          "package_name": "com.example.dolabim"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAALC-5OB0Q_bMH9RKQq8eSn9nzdYtM68Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
