@@ -10,7 +10,7 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dolabım Ana Sayfa"),
+        title: const Text("Glamora"),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'pages/auth_page.dart';
+import 'pages/first_splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,13 +18,12 @@ class GlamoraApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'GLAMORA',
+      title: 'Glamora',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pinkAccent),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFC8A25D)),
         useMaterial3: true,
-        fontFamily: 'Roboto',
       ),
-      home: const AuthPage(),
+      home: const FirstSplashScreen(), // ✨ İlk açılışta gösterilecek
     );
   }
 }
