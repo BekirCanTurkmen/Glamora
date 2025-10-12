@@ -1,5 +1,5 @@
 name: dolabim
-description: "A Flutter project integrated with Firebase Authentication and Firestore."
+description: "A Flutter project integrated with Firebase Authentication and Supabase Storage."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -15,16 +15,20 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   #  Firebase paketleri
-  firebase_core: ^3.6.0        # Firebase'i başlatmak için
-  firebase_auth: ^5.3.1        # Email/Password giriş sistemi
-  cloud_firestore: ^5.4.4      # Firestore veritabanı
-#fotoğrafı bunla çekicez ya da yüklücez
-  image_picker: ^1.1.2
-  #  Shimmer efekti (altın parlama için)
-  shimmer: ^3.0.0
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
 
-  # (isteğe bağlı) Gelişmiş animasyonlar için
-  # flutter_animate: ^4.5.0
+  #  Firestore artık zorunlu değil ama istersen kalabilir
+  # cloud_firestore: ^5.4.4
+
+  #  Supabase paketi (Storage + Database)
+  supabase_flutter: ^2.5.8
+
+  #  Fotoğraf seçmek veya çekmek için
+  image_picker: ^1.1.2
+
+  #  Shimmer efekti
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -34,7 +38,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  #  Görsellerin ve logoların kullanılabilmesi için aktif hale getirildi
+  # 🖼 Görseller
   assets:
     - assets/images/glamora_logo.png
     - assets/images/glamora_harf_logo.png

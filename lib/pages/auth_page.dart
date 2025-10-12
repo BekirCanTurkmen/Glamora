@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/glamora_theme.dart';
 import '../services/auth_service.dart';
-import '../pages/home_page.dart';
-import '../pages/forgot_password_page.dart';
-import '../splash/splash_after_login.dart';
+import 'wardrobe_page.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -13,182 +13,164 @@ class AuthPage extends StatefulWidget {
 
 class _AuthPageState extends State<AuthPage> {
   final AuthService _authService = AuthService();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
   bool isLogin = true;
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Eğer kullanıcı zaten giriş yaptıysa direkt yönlendir
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      Future.delayed(Duration.zero, () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WardrobePage()),
+        );
+      });
+    }
+  }
 
   Future<void> _submit() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
+      _showSnack("Please fill all fields");
       return;
     }
 
     setState(() => isLoading = true);
     String? result;
+
     if (isLogin) {
       result = await _authService.login(email, password);
     } else {
       result = await _authService.register(email, password);
+      // 🔑 Kayıt sonrası otomatik giriş
+      if (result == null) {
+        result = await _authService.login(email, password);
+      }
     }
+
     setState(() => isLoading = false);
 
-    if (result == "success") {
-      // ✅ Giriş veya kayıt başarılı → SplashAfterLogin ekranına git
+    if (result == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SplashAfterLogin()),
+        MaterialPageRoute(builder: (_) => const WardrobePage()),
       );
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(result ?? "Error")));
+      _showSnack(result);
     }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            style: const TextStyle(color: GlamoraColors.midnightBlue)),
+        backgroundColor: GlamoraColors.creamBeige,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 🌌 Gece mavisi - lacivert yumuşak geçişli gradient arka plan
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0B1739), Color(0xFF13224F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
+      backgroundColor: GlamoraColors.midnightBlue,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 🪙 GLAMORA Yazısı (krem renk)
                 const Text(
                   "Glamora",
                   style: TextStyle(
-                    fontSize: 52,
+                    fontSize: 38,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    color: Color(0xFFF6EFD9),
-                    fontFamily: 'Georgia',
+                    color: GlamoraColors.creamBeige,
+                    letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 40),
 
-                // 📨 Email alanı
+                // ✉️ Email Field
                 TextField(
                   controller: emailController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.08),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
                     labelText: "Email",
-                    labelStyle: const TextStyle(
-                        color: Color(0xFFF6EFD9), fontSize: 16),
-                    prefixIcon: const Icon(Icons.email_outlined,
-                        color: Color(0xFFF6EFD9)),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(
-                          color: Color(0xFFF6EFD9), width: 2),
-                      borderRadius: BorderRadius.circular(12),
+                    labelStyle: TextStyle(color: Colors.white70),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: GlamoraColors.creamBeige),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide:
+                      BorderSide(color: GlamoraColors.creamBeige, width: 2),
                     ),
                   ),
-                  style: const TextStyle(color: Color(0xFFF6EFD9)),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // 🔑 Şifre alanı
+                // 🔑 Password Field
                 TextField(
                   controller: passwordController,
                   obscureText: true,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.08),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
                     labelText: "Password",
-                    labelStyle: const TextStyle(
-                        color: Color(0xFFF6EFD9), fontSize: 16),
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: Color(0xFFF6EFD9)),
+                    labelStyle: TextStyle(color: Colors.white70),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: GlamoraColors.creamBeige),
+                    ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(
-                          color: Color(0xFFF6EFD9), width: 2),
+                      borderSide:
+                      BorderSide(color: GlamoraColors.creamBeige, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // 🚀 Login/Register Button
+                ElevatedButton(
+                  onPressed: isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: GlamoraColors.creamBeige,
+                    foregroundColor: GlamoraColors.midnightBlue,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 80, vertical: 14),
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
-                  style: const TextStyle(color: Color(0xFFF6EFD9)),
-                ),
-                const SizedBox(height: 15),
-
-                // 🔗 Şifremi Unuttum
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                            const ForgotPasswordPage()),
-                      );
-                    },
-                    child: const Text(
-                      "Forgot Password?",
-                      style: TextStyle(
-                        color: Color(0xFFF6EFD9),
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: isLoading
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: GlamoraColors.midnightBlue,
+                      strokeWidth: 2.4,
                     ),
-                  ),
+                  )
+                      : Text(isLogin ? "Login" : "Register"),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
 
-                // 🟤 Giriş / Kayıt butonu
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF6EFD9),
-                      foregroundColor: const Color(0xFF0B1739),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      textStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    child: isLoading
-                        ? const CircularProgressIndicator(
-                        color: Color(0xFF0B1739))
-                        : Text(isLogin ? "Login" : "Register"),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // 🔄 Giriş/Kayıt geçişi
+                // 🔁 Switch Mode (Login <-> Register)
                 TextButton(
                   onPressed: () => setState(() => isLogin = !isLogin),
                   child: Text(
                     isLogin
-                        ? "Don’t have an account? Register"
+                        ? "Don't have an account? Register"
                         : "Already have an account? Login",
-                    style: const TextStyle(
-                      color: Color(0xFFF6EFD9),
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ),
               ],
