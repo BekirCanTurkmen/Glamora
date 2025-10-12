@@ -21,21 +21,19 @@ class _SplashAfterLoginState extends State<SplashAfterLogin>
   void initState() {
     super.initState();
 
-    //  G harfi büyümesi (1.5 sn ayarladım değişebilir belki)
+    // 🌀 G logosu büyüme animasyonu
     _logoController =
         AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
     _logoScale = Tween<double>(begin: 0.2, end: 1.0)
         .animate(CurvedAnimation(parent: _logoController, curve: Curves.easeOutExpo));
     _logoController.forward();
 
-    //  1.5 sn sonra harf harf yazı çıkmaya başlar
+    // ✨ 1.5 sn sonra Glamora harfleri tek tek belirsin
     Future.delayed(const Duration(milliseconds: 1500), () {
       int index = 0;
       _textTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) {
         if (index < _fullText.length) {
-          setState(() {
-            _visibleText += _fullText[index];
-          });
+          setState(() => _visibleText += _fullText[index]);
           index++;
         } else {
           timer.cancel();
@@ -43,18 +41,23 @@ class _SplashAfterLoginState extends State<SplashAfterLogin>
       });
     });
 
-    //  3.5 sn sonra HomePage'e geç
+    // ⏩ 3.5 sn sonra HomePage'e yumuşak geçiş yap
     Future.delayed(const Duration(milliseconds: 3500), () {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const HomePage(),
-          transitionDuration: const Duration(milliseconds: 600),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const HomePage(),
+            transitionDuration: const Duration(milliseconds: 700),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+                child: child,
+              );
+            },
+          ),
+        );
+      }
     });
   }
 
@@ -68,12 +71,11 @@ class _SplashAfterLoginState extends State<SplashAfterLogin>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1739), // gece mavisi
+      backgroundColor: const Color(0xFF0B1739), // midnight blue tonu
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            //  Askılı G logosu küçükten büyür
             ScaleTransition(
               scale: _logoScale,
               child: Image.asset(
@@ -83,8 +85,6 @@ class _SplashAfterLoginState extends State<SplashAfterLogin>
               ),
             ),
             const SizedBox(height: 35),
-
-            //  Glamora yazısı harf harf çıkar
             if (_visibleText.isNotEmpty)
               Text(
                 _visibleText,
@@ -93,7 +93,7 @@ class _SplashAfterLoginState extends State<SplashAfterLogin>
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Georgia',
                   letterSpacing: 1.3,
-                  color: Color(0xFFF6EFD9),
+                  color: Color(0xFFF6EFD9), // cream beige tonu
                 ),
               ),
           ],

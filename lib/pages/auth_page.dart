@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/glamora_theme.dart';
 import '../services/auth_service.dart';
 import 'wardrobe_page.dart';
+import '../splash/splash_after_login.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -61,7 +62,7 @@ class _AuthPageState extends State<AuthPage> {
     if (result == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const WardrobePage()),
+        MaterialPageRoute(builder: (_) => const SplashAfterLogin()),
       );
     } else {
       _showSnack(result);
