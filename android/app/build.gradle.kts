@@ -12,7 +12,7 @@ android {
     namespace = "com.example.dolabim"
     
     // ✅ Sabit sürümleri elle belirtiyoruz (Firebase ve FlutterFire uyumu için)
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -30,7 +30,7 @@ android {
 
         // ✅ Firebase Core minimum gereksinimi: API 23
         minSdk = 23
-        targetSdk = 34
+        targetSdk = 35
 
         versionCode = 1
         versionName = "1.0"

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'home_page.dart';
+import '../pages/home_page.dart';
 
 class SplashAfterLogin extends StatefulWidget {
   const SplashAfterLogin({super.key});

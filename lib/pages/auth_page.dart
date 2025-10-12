@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../pages/home_page.dart';
 import '../pages/forgot_password_page.dart';
-import 'splash_after_login.dart';
+import '../splash/splash_after_login.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});

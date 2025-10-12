@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'auth_page.dart';
+import '../pages/auth_page.dart';
 
 class FirstSplashScreen extends StatefulWidget {
   const FirstSplashScreen({super.key});

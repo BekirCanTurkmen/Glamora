@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// 🩷 GLAMORA Authentication Service
+
 /// Uygulamadaki tüm kullanıcı giriş, kayıt ve şifre sıfırlama işlemlerini yönetir.
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -43,7 +43,7 @@ class AuthService {
     }
   }
 
-  /// 🔹 Kullanıcı girişi (Login)
+  ///  Kullanıcı girişi (Login)
   /// Email ve şifre ile giriş yapar, hata durumlarını yakalar.
   Future<String?> login(String email, String password) async {
     try {
@@ -65,7 +65,7 @@ class AuthService {
     }
   }
 
-  /// 🔹 Şifre sıfırlama (Forgot Password)
+  ///  Şifre sıfırlama (Forgot Password)
   /// Kullanıcı e-posta adresini girer, Firebase sıfırlama linkini gönderir.
   Future<String?> resetPassword(String email) async {
     try {
@@ -85,7 +85,7 @@ class AuthService {
     }
   }
 
-  /// 🔹 Kullanıcı çıkış işlemi
+  ///  Kullanıcı çıkış işlemi
   Future<void> logout() async {
     await _auth.signOut();
   }

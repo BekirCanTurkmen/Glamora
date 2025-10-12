@@ -14,12 +14,13 @@ dependencies:
   # iOS tarzı ikonlar
   cupertino_icons: ^1.0.8
 
-  # 🔥 Firebase paketleri
+  #  Firebase paketleri
   firebase_core: ^3.6.0        # Firebase'i başlatmak için
   firebase_auth: ^5.3.1        # Email/Password giriş sistemi
   cloud_firestore: ^5.4.4      # Firestore veritabanı
-
-  # ✨ Shimmer efekti (altın parlama için)
+#fotoğrafı bunla çekicez ya da yüklücez
+  image_picker: ^1.1.2
+  #  Shimmer efekti (altın parlama için)
   shimmer: ^3.0.0
 
   # (isteğe bağlı) Gelişmiş animasyonlar için
@@ -33,7 +34,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # 👇 Görsellerin ve logoların kullanılabilmesi için aktif hale getirildi
+  #  Görsellerin ve logoların kullanılabilmesi için aktif hale getirildi
   assets:
     - assets/images/glamora_logo.png
     - assets/images/glamora_harf_logo.png
