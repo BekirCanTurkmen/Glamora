@@ -4,8 +4,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class StorageService {
-  // outfit görselini Firebase Storage'a yükler ve Firestore'a kaydeder
-  static Future<void> uploadOutfitImage(File imageFile) async {
+  // outfit görselini Storage'a yükler ve Firestore'a kaydeder
+  static Future<void> uploadOutfitImage(File imageFile, String category) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw Exception("User not logged in");
@@ -19,7 +19,7 @@ class StorageService {
         .child('wardrobe')
         .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-    // dosyayı Firebase Storage'a yükleme
+    // dosyayı Firebase Storage'a yükle
     final uploadTask = await storageRef.putFile(imageFile);
     final downloadUrl = await uploadTask.ref.getDownloadURL();
 
@@ -30,18 +30,18 @@ class StorageService {
         .collection('wardrobe')
         .add({
       'imageUrl': downloadUrl,
+      'category': category,
       'uploadedAt': Timestamp.now(),
     });
   }
 
-  // outfit silme (Firestore + Storage)
+  // outfit silme
   static Future<void> deleteOutfit(String docId, String imageUrl) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw Exception("User not logged in");
     }
 
-    // Firestore'dan belgeyi sil
     await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -49,20 +49,7 @@ class StorageService {
         .doc(docId)
         .delete();
 
-    // Storage'tan da aynı dosyayı sil
     final ref = FirebaseStorage.instance.refFromURL(imageUrl);
     await ref.delete();
-  }
-
-  // ileride kullanılacak: ana sayfaya (trends koleksiyonu) paylaşım
-  static Future<void> shareToTrends(String imageUrl) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    await FirebaseFirestore.instance.collection('trends').add({
-      'imageUrl': imageUrl,
-      'userId': user.uid,
-      'sharedAt': Timestamp.now(),
-    });
   }
 }

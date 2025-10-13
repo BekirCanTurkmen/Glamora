@@ -15,8 +15,20 @@ class _PhotoUploaderState extends State<PhotoUploader> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   bool _isUploading = false;
+  String? _selectedCategory;
 
-  // fotoğraf seçimi (kamera veya galeri)
+  // kategori listesi
+  final List<String> _categories = [
+    "Tops",
+    "Bottoms",
+    "Dresses",
+    "Shoes",
+    "Outerwear",
+    "Accessories",
+    "Others",
+  ];
+
+  // fotoğraf seçimi
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(source: source, imageQuality: 85);
     if (picked != null) {
@@ -26,17 +38,22 @@ class _PhotoUploaderState extends State<PhotoUploader> {
 
   // firebase'e yükleme işlemi
   Future<void> _uploadImage() async {
-    if (_selectedImage == null) return;
+    if (_selectedImage == null || _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a category and photo.")),
+      );
+      return;
+    }
 
     setState(() => _isUploading = true);
 
     try {
-      await StorageService.uploadOutfitImage(_selectedImage!);
+      await StorageService.uploadOutfitImage(_selectedImage!, _selectedCategory!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Outfit uploaded successfully!")),
         );
-        Navigator.pop(context); // işlemi bitirince geri dön
+        Navigator.pop(context);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,9 +72,8 @@ class _PhotoUploaderState extends State<PhotoUploader> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // seçilen görsel alanı
+              // fotoğraf alanı
               if (_selectedImage != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -77,7 +93,6 @@ class _PhotoUploaderState extends State<PhotoUploader> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: GlamoraColors.creamBeige.withOpacity(0.4),
-                      width: 1,
                     ),
                   ),
                   alignment: Alignment.center,
@@ -86,6 +101,34 @@ class _PhotoUploaderState extends State<PhotoUploader> {
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ),
+
+              const SizedBox(height: 24),
+
+              // kategori seçimi
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                dropdownColor: GlamoraColors.deepNavy,
+                decoration: InputDecoration(
+                  labelText: "Select Category",
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  filled: true,
+                  fillColor: GlamoraColors.softWhite,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                iconEnabledColor: GlamoraColors.creamBeige,
+                items: _categories
+                    .map((category) => DropdownMenuItem(
+                  value: category,
+                  child: Text(
+                    category,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedCategory = value),
+              ),
 
               const SizedBox(height: 24),
 
@@ -110,13 +153,12 @@ class _PhotoUploaderState extends State<PhotoUploader> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GlamoraColors.creamBeige,
                     foregroundColor: GlamoraColors.midnightBlue,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 14),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
                   ),
                   child: _isUploading
                       ? const CircularProgressIndicator(
-                    color: GlamoraColors.midnightBlue,
-                  )
+                      color: GlamoraColors.midnightBlue)
                       : const Text(
                     "Upload Outfit",
                     style: TextStyle(fontWeight: FontWeight.w600),
