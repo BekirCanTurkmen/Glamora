@@ -1,4 +1,4 @@
-/*import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -23,7 +23,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
 
     setState(() => isLoading = true);
-   final result = await _authService.resetPassword(email);
+    final result = await _authService.resetPassword(email);
     setState(() => isLoading = false);
 
     if (result == "success") {
@@ -107,4 +107,4 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ),
     );
   }
-}*/
+}
