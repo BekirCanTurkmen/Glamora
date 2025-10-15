@@ -12,11 +12,15 @@ dependencies:
     sdk: flutter
 
   # iOS tarzı ikonlar
+  firebase_core: ^3.4.0
+  firebase_auth: ^5.3.1
+  cloud_functions: ^5.1.1
+  http: ^1.2.1
   cupertino_icons: ^1.0.8
-
+  fl_chart: ^0.66.0
+  palette_generator: ^0.3.3+5
   #  Firebase paketleri
-  firebase_core: ^3.6.0        # Firebase'i başlatmak için
-  firebase_auth: ^5.3.1        # Email/Password giriş sistemi
+      # Email/Password giriş sistemi
   cloud_firestore: ^5.4.4      # Firestore veritabanı
   firebase_storage: ^12.3.2
   #fotoğrafı bunla çekicez ya da yüklücez

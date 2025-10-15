@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:dolabim/pages/wardrobe_page.dart';
+import 'package:dolabim/pages/trend_match_test_page.dart';
 import '../theme/glamora_theme.dart';
+import 'package:dolabim/pages/color_distribution_page.dart';
+
+// ↓ Functions için gerekli paketler
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -23,6 +30,97 @@ class HomePage extends StatelessWidget {
           ),
         ),
         iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
+
+        // ✅ İKİNCİ KODDAN EKLENEN AKSİYONLAR
+        actions: [
+          // Trend Match test sayfası
+          IconButton(
+            tooltip: 'Trend Match (Test)',
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TrendMatchTestPage()),
+              );
+            },
+          ),
+
+          // 🎨 Renk Dağılımı Grafiği
+          IconButton(
+            tooltip: 'Renk Dağılımı Grafiği',
+            icon: const Icon(Icons.pie_chart),
+            onPressed: () {
+              // Demo: örnek görseller, kendi dolabındaki veriye göre düzenleyebilirsin
+              final demoItems = [
+                WardrobeItem(image: const AssetImage('assets/images/glamora_logo.png')),
+                WardrobeItem(image: const AssetImage('Glamora/assets/images/ggnjknsm.5kg_IMG_01_8683791425782.jpg')),
+              ];
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ColorDistributionPage(items: demoItems),
+                ),
+              );
+            },
+          ),
+
+          // Functions menüsü (fetchTrendsNow + suggestOutfits)
+          PopupMenuButton<String>(
+            onSelected: (v) async {
+              try {
+                if (v == 'fetchTrends') {
+                  // TODO: <REGION> ve <PROJECT_ID> değerlerini kendi Functions URL'inden kopyala
+                  final url = Uri.parse(
+                    'https://<REGION>-<PROJECT_ID>.cloudfunctions.net/fetchTrendsNow',
+                  );
+                  final r = await http.get(url);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('fetchTrendsNow: ${r.statusCode}')),
+                  );
+                } else if (v == 'suggest') {
+                  final uid = FirebaseAuth.instance.currentUser?.uid;
+                  if (uid == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Önce giriş yapmalısın')),
+                    );
+                    return;
+                  }
+
+                  final callable = FirebaseFunctions.instance.httpsCallable('suggestOutfits');
+                  final res = await callable.call({'limit': 6});
+                  final List combos = List.from(res.data);
+
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Öneriler'),
+                      content: Text(
+                        combos.isEmpty
+                            ? 'Öneri yok'
+                            : combos.map((e) => e['trend']).join(', '),
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Hata: $e')),
+                );
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'fetchTrends',
+                child: Text('Trendleri Doldur (Dev)'),
+              ),
+              PopupMenuItem(
+                value: 'suggest',
+                child: Text('Kombin Öner (Callable)'),
+              ),
+            ],
+          ),
+        ],
       ),
 
       body: ListView(
@@ -70,11 +168,11 @@ class HomePage extends StatelessWidget {
                     width: double.infinity,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
+                const Padding(
+                  padding: EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         "Midnight Elegance",
                         style: TextStyle(
@@ -108,7 +206,15 @@ class HomePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: GlamoraColors.deepNavy.withOpacity(0.15),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,9 +231,9 @@ class HomePage extends StatelessWidget {
                     width: double.infinity,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: const Text(
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
                     "Soft beige tones dominate this week’s top picks.",
                     style: TextStyle(
                       color: GlamoraColors.deepNavy, // ✅ lacivert yazı
@@ -142,7 +248,7 @@ class HomePage extends StatelessWidget {
         ],
       ),
 
-      // 🔸 alt gezinme menüsü
+      // 🔸 alt gezinme menüsü (ilk koddaki açık tema korunur)
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white, // ✅ beyaz alt bar
         selectedItemColor: GlamoraColors.deepNavy, // ✅ seçili lacivert
