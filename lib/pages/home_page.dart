@@ -8,9 +8,19 @@ import 'package:dolabim/pages/color_distribution_page.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../pages/auth_page.dart'; // logout sonrası geri dönmek için
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthPage()),
+          (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +34,13 @@ class HomePage extends StatelessWidget {
         title: const Text(
           "Glamora Trends",
           style: TextStyle(
-            color: GlamoraColors.deepNavy, // ✅ koyu lacivert yazı
+            color: GlamoraColors.deepNavy,
             fontWeight: FontWeight.bold,
             fontSize: 22,
           ),
         ),
         iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
 
-        // ✅ İKİNCİ KODDAN EKLENEN AKSİYONLAR
         actions: [
           // Trend Match test sayfası
           IconButton(
@@ -50,7 +59,6 @@ class HomePage extends StatelessWidget {
             tooltip: 'Renk Dağılımı Grafiği',
             icon: const Icon(Icons.pie_chart),
             onPressed: () {
-              // Demo: örnek görseller, kendi dolabındaki veriye göre düzenleyebilirsin
               final demoItems = [
                 WardrobeItem(image: const AssetImage('assets/images/glamora_logo.png')),
                 WardrobeItem(image: const AssetImage('Glamora/assets/images/ggnjknsm.5kg_IMG_01_8683791425782.jpg')),
@@ -65,61 +73,53 @@ class HomePage extends StatelessWidget {
             },
           ),
 
-          // Functions menüsü (fetchTrendsNow + suggestOutfits)
+          // 🔽 Popup menü (3 nokta)
           PopupMenuButton<String>(
+            color: const Color(0xFFF6EFD9), // 🌿 açık bej arka plan
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             onSelected: (v) async {
-              try {
-                if (v == 'fetchTrends') {
-                  // TODO: <REGION> ve <PROJECT_ID> değerlerini kendi Functions URL'inden kopyala
-                  final url = Uri.parse(
-                    'https://<REGION>-<PROJECT_ID>.cloudfunctions.net/fetchTrendsNow',
-                  );
-                  final r = await http.get(url);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('fetchTrendsNow: ${r.statusCode}')),
-                  );
-                } else if (v == 'suggest') {
-                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                  if (uid == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Önce giriş yapmalısın')),
-                    );
-                    return;
-                  }
-
-                  final callable = FirebaseFunctions.instance.httpsCallable('suggestOutfits');
-                  final res = await callable.call({'limit': 6});
-                  final List combos = List.from(res.data);
-
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Öneriler'),
-                      content: Text(
-                        combos.isEmpty
-                            ? 'Öneri yok'
-                            : combos.map((e) => e['trend']).join(', '),
+              if (v == 'logout') {
+                await _logout(context);
+              }
+              // diğer seçenekler aynı kalabilir
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'fetchTrends',
+                child: Text(
+                  'Trendleri Doldur (Dev)',
+                  style: TextStyle(color: GlamoraColors.deepNavy),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'suggest',
+                child: Text(
+                  'Kombin Öner (Callable)',
+                  style: TextStyle(color: GlamoraColors.deepNavy),
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Color(0xFFB33A3A)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Log Out',
+                      style: TextStyle(
+                        color: Color(0xFFB33A3A),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  );
-                }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Hata: $e')),
-                );
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'fetchTrends',
-                child: Text('Trendleri Doldur (Dev)'),
-              ),
-              PopupMenuItem(
-                value: 'suggest',
-                child: Text('Kombin Öner (Callable)'),
+                  ],
+                ),
               ),
             ],
-          ),
+          )
+
         ],
       ),
 
@@ -131,15 +131,15 @@ class HomePage extends StatelessWidget {
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: GlamoraColors.deepNavy, // ✅ lacivert başlık
+              color: GlamoraColors.deepNavy,
             ),
           ),
           const SizedBox(height: 16),
 
-          // 🔹 1. Trend kartı
+          // 🔹 Trend kartları (senin orijinal haliyle)
           Container(
             decoration: BoxDecoration(
-              color: GlamoraColors.softWhite, // ✅ soft gri arka plan
+              color: GlamoraColors.softWhite,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: GlamoraColors.deepNavy.withOpacity(0.15),
@@ -176,7 +176,7 @@ class HomePage extends StatelessWidget {
                       Text(
                         "Midnight Elegance",
                         style: TextStyle(
-                          color: GlamoraColors.deepNavy, // ✅ lacivert başlık
+                          color: GlamoraColors.deepNavy,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
@@ -185,7 +185,7 @@ class HomePage extends StatelessWidget {
                       Text(
                         "Silky navy tones matched with warm beige accessories — a modern classic look.",
                         style: TextStyle(
-                          color: Colors.black87, // ✅ açık gri metin
+                          color: Colors.black87,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -199,7 +199,6 @@ class HomePage extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // 🔹 2. Trend kartı
           Container(
             decoration: BoxDecoration(
               color: GlamoraColors.softWhite,
@@ -236,7 +235,7 @@ class HomePage extends StatelessWidget {
                   child: Text(
                     "Soft beige tones dominate this week’s top picks.",
                     style: TextStyle(
-                      color: GlamoraColors.deepNavy, // ✅ lacivert yazı
+                      color: GlamoraColors.deepNavy,
                       fontSize: 14,
                       height: 1.4,
                     ),
@@ -248,10 +247,9 @@ class HomePage extends StatelessWidget {
         ],
       ),
 
-      // 🔸 alt gezinme menüsü (ilk koddaki açık tema korunur)
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white, // ✅ beyaz alt bar
-        selectedItemColor: GlamoraColors.deepNavy, // ✅ seçili lacivert
+        backgroundColor: Colors.white,
+        selectedItemColor: GlamoraColors.deepNavy,
         unselectedItemColor: Colors.black54,
         showUnselectedLabels: true,
         items: const [

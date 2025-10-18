@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../pages/forgot_password_page.dart';
 import '../splash/splash_after_login.dart';
@@ -17,6 +19,27 @@ class _AuthPageState extends State<AuthPage> {
   bool isLogin = true;
   bool isLoading = false;
 
+  // 🔹 Kullanıcı Firestore'da kayıtlı değilse ekle
+  Future<void> _saveUserDataIfNotExists() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final docRef =
+    FirebaseFirestore.instance.collection('glamora_users').doc(user.uid);
+
+    final doc = await docRef.get();
+    if (!doc.exists) {
+      await docRef.set({
+        'uid': user.uid,
+        'email': user.email,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      print('✅ User added to glamora_users: ${user.email}');
+    } else {
+      print('ℹ️ User already exists: ${user.email}');
+    }
+  }
+
   Future<void> _submit() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -30,14 +53,19 @@ class _AuthPageState extends State<AuthPage> {
 
     setState(() => isLoading = true);
     String? result;
+
     if (isLogin) {
       result = await _authService.login(email, password);
     } else {
       result = await _authService.register(email, password);
     }
+
     setState(() => isLoading = false);
 
     if (result == "success") {
+      // ✅ Firestore'da kullanıcıyı kaydet
+      await _saveUserDataIfNotExists();
+
       // ✅ Giriş veya kayıt başarılı → SplashAfterLogin ekranına git
       Navigator.pushReplacement(
         context,
@@ -52,7 +80,6 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 🌌 Gece mavisi - lacivert yumuşak geçişli gradient arka plan
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -67,7 +94,6 @@ class _AuthPageState extends State<AuthPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 🪙 GLAMORA Yazısı (krem renk)
                 const Text(
                   "Glamora",
                   style: TextStyle(
@@ -80,7 +106,7 @@ class _AuthPageState extends State<AuthPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // 📨 Email alanı
+                // 📨 Email field
                 TextField(
                   controller: emailController,
                   decoration: InputDecoration(
@@ -104,7 +130,7 @@ class _AuthPageState extends State<AuthPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // 🔑 Şifre alanı
+                // 🔑 Password field
                 TextField(
                   controller: passwordController,
                   obscureText: true,
@@ -129,7 +155,6 @@ class _AuthPageState extends State<AuthPage> {
                 ),
                 const SizedBox(height: 15),
 
-                // 🔗 Şifremi Unuttum
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -150,10 +175,9 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
 
-                // 🟤 Giriş / Kayıt butonu
+                // 🟤 Login/Register button
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -177,7 +201,7 @@ class _AuthPageState extends State<AuthPage> {
 
                 const SizedBox(height: 20),
 
-                // 🔄 Giriş/Kayıt geçişi
+                // 🔄 Toggle login/register
                 TextButton(
                   onPressed: () => setState(() => isLogin = !isLogin),
                   child: Text(

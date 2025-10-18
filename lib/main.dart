@@ -1,3 +1,4 @@
+import 'package:dolabim/pages/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -29,7 +30,7 @@ class GlamoraApp extends StatelessWidget {
       theme: glamoraTheme,
 
 
-      home: const FirstSplashScreen(),
+      home: const AuthGate(),
     );
   }
 }

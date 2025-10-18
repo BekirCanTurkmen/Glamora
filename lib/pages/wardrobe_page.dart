@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'photo_uploader.dart';
 import '../theme/glamora_theme.dart';
+import 'clothing_detail_page.dart'; // Eğer ayrı dosyadaysa bu satır senin path’inle eşleşmeli
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -25,12 +26,13 @@ class _WardrobePageState extends State<WardrobePage> {
     "Others",
   ];
 
+  // ✅ Artık doğru Firestore path: glamora_users/{uid}/wardrobe
   Stream<QuerySnapshot<Map<String, dynamic>>> _getUserOutfits() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
 
     final ref = FirebaseFirestore.instance
-        .collection('users')
+        .collection('glamora_users') // 🔹 Değiştirildi
         .doc(user.uid)
         .collection('wardrobe')
         .orderBy('uploadedAt', descending: true);
@@ -45,7 +47,7 @@ class _WardrobePageState extends State<WardrobePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // ✅ açık arka plan
+      backgroundColor: Colors.white,
 
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -54,7 +56,7 @@ class _WardrobePageState extends State<WardrobePage> {
         title: const Text(
           "My Wardrobe",
           style: TextStyle(
-            color: GlamoraColors.deepNavy, // ✅ yazı rengi deepNavy
+            color: GlamoraColors.deepNavy,
             fontWeight: FontWeight.bold,
             fontSize: 22,
           ),
@@ -64,7 +66,7 @@ class _WardrobePageState extends State<WardrobePage> {
 
       body: Column(
         children: [
-          // kategori filtreleri
+          // 🔹 Category filter bar
           SizedBox(
             height: 50,
             child: ListView.builder(
@@ -79,20 +81,15 @@ class _WardrobePageState extends State<WardrobePage> {
                   child: ChoiceChip(
                     label: Text(category),
                     selected: isSelected,
-
-                    // 🔹 Seçilmediğinde lacivert arka plan + beyaz yazı
                     backgroundColor: GlamoraColors.deepNavy,
                     labelStyle: TextStyle(
                       color: isSelected
-                          ? GlamoraColors.deepNavy  // seçiliyken lacivert yazı
-                          : Colors.white,            // seçili değilken beyaz yazı
+                          ? GlamoraColors.deepNavy
+                          : Colors.white,
                       fontWeight: FontWeight.w500,
                     ),
-
-                    // 🔸 Seçiliyken bej arka plan
                     selectedColor: GlamoraColors.creamBeige,
                     checkmarkColor: GlamoraColors.deepNavy,
-
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
@@ -102,24 +99,22 @@ class _WardrobePageState extends State<WardrobePage> {
                         width: 1,
                       ),
                     ),
-
                     onSelected: (_) => setState(() => selectedCategory = category),
                   ),
-
                 );
               },
             ),
           ),
 
-          // outfit grid
+          // 🔹 Outfit Grid
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: _getUserOutfits(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                        color: GlamoraColors.deepNavy),
+                    child:
+                    CircularProgressIndicator(color: GlamoraColors.deepNavy),
                   );
                 }
 
@@ -128,7 +123,7 @@ class _WardrobePageState extends State<WardrobePage> {
                     child: Text(
                       "No outfits in this category yet.",
                       style: TextStyle(
-                        color: GlamoraColors.deepNavy, // ✅ yazı deepNavy
+                        color: GlamoraColors.deepNavy,
                         fontSize: 16,
                       ),
                     ),
@@ -139,8 +134,7 @@ class _WardrobePageState extends State<WardrobePage> {
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
@@ -151,28 +145,45 @@ class _WardrobePageState extends State<WardrobePage> {
                     final data = outfits[index].data();
                     final imageUrl = data['imageUrl'] ?? '';
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: GlamoraColors.softWhite,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: GlamoraColors.deepNavy.withOpacity(0.2),
-                          width: 1,
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ClothingDetailPage(data: data),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          loadingBuilder:
-                              (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                  color: GlamoraColors.deepNavy),
-                            );
-                          },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            loadingBuilder:
+                                (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                    color: GlamoraColors.deepNavy),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(Icons.image_not_supported,
+                                  color: Colors.grey, size: 48),
+                            ),
+                          ),
                         ),
                       ),
                     );
@@ -184,9 +195,10 @@ class _WardrobePageState extends State<WardrobePage> {
         ],
       ),
 
+      // 🔹 Add outfit button
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: GlamoraColors.creamBeige, // ✅ bej buton
-        foregroundColor: GlamoraColors.deepNavy, // ✅ lacivert yazı/ikon
+        backgroundColor: GlamoraColors.creamBeige,
+        foregroundColor: GlamoraColors.deepNavy,
         icon: const Icon(Icons.add_a_photo),
         label: const Text("Add Outfit"),
         onPressed: () {

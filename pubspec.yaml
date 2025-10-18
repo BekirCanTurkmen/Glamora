@@ -11,25 +11,29 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # iOS tarzı ikonlar
+  # --- Flutter UI / Icon ---
+  cupertino_icons: ^1.0.8
+
+  # --- Firebase Bağımlılıkları ---
   firebase_core: ^3.4.0
   firebase_auth: ^5.3.1
-  cloud_functions: ^5.1.1
-  http: ^1.2.1
-  cupertino_icons: ^1.0.8
-  fl_chart: ^0.66.0
-  palette_generator: ^0.3.3+5
-  #  Firebase paketleri
-      # Email/Password giriş sistemi
-  cloud_firestore: ^5.4.4      # Firestore veritabanı
+  cloud_firestore: ^5.4.4       # Firestore veritabanı
   firebase_storage: ^12.3.2
-  #fotoğrafı bunla çekicez ya da yüklücez
-  image_picker: ^1.1.2
-  #  Shimmer efekti (altın parlama için)
-  shimmer: ^3.0.0
+  cloud_functions: ^5.1.1
 
-  # (isteğe bağlı) Gelişmiş animasyonlar için
-  # flutter_animate: ^4.5.0
+  # --- HTTP istekleri için ---
+  http: ^1.2.1
+
+  # --- Görsel ve Renk Analizi ---
+  fl_chart: ^0.66.0             # PieChart, LineChart, vs.
+  palette_generator: ^0.3.3+5   # Görselden renk paleti çıkarma
+
+  # --- Fotoğraf Seçme / Yükleme ---
+  image_picker: ^1.1.2          # Kamera veya galeri erişimi
+
+  # --- Efekt ve Animasyonlar ---
+  shimmer: ^3.0.0               # Altın parlama efekti
+  flutter_animate: ^4.5.0       # Ek animasyon efektleri
 
 dev_dependencies:
   flutter_test:
@@ -39,7 +43,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  #  Görsellerin ve logoların kullanılabilmesi için aktif hale getirildi
   assets:
     - assets/images/glamora_logo.png
     - assets/images/glamora_harf_logo.png
