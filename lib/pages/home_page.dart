@@ -3,12 +3,9 @@ import 'package:dolabim/pages/wardrobe_page.dart';
 import 'package:dolabim/pages/trend_match_test_page.dart';
 import '../theme/glamora_theme.dart';
 import 'package:dolabim/pages/color_distribution_page.dart';
-
-// ↓ Functions için gerekli paketler
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import '../pages/auth_page.dart'; // logout sonrası geri dönmek için
+import '../pages/auth_page.dart';
+import 'chat_list_page.dart'; // ✅ yeni liste ekranını dahil ettik
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -25,8 +22,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // ✅ açık arka plan
-
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -40,9 +36,7 @@ class HomePage extends StatelessWidget {
           ),
         ),
         iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
-
         actions: [
-          // Trend Match test sayfası
           IconButton(
             tooltip: 'Trend Match (Test)',
             icon: const Icon(Icons.auto_awesome),
@@ -53,17 +47,14 @@ class HomePage extends StatelessWidget {
               );
             },
           ),
-
-          // 🎨 Renk Dağılımı Grafiği
           IconButton(
             tooltip: 'Renk Dağılımı Grafiği',
             icon: const Icon(Icons.pie_chart),
             onPressed: () {
               final demoItems = [
                 WardrobeItem(image: const AssetImage('assets/images/glamora_logo.png')),
-                WardrobeItem(image: const AssetImage('Glamora/assets/images/ggnjknsm.5kg_IMG_01_8683791425782.jpg')),
+                WardrobeItem(image: const AssetImage('assets/images/glamora_harf_logo.png')),
               ];
-
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -72,35 +63,25 @@ class HomePage extends StatelessWidget {
               );
             },
           ),
-
-          // 🔽 Popup menü (3 nokta)
+          IconButton(
+            tooltip: 'Mesajlaşma',
+            icon: const Icon(Icons.chat_bubble_outline),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatListPage()),
+              );
+            },
+          ),
           PopupMenuButton<String>(
-            color: const Color(0xFFF6EFD9), // 🌿 açık bej arka plan
+            color: const Color(0xFFF6EFD9),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
             onSelected: (v) async {
-              if (v == 'logout') {
-                await _logout(context);
-              }
-              // diğer seçenekler aynı kalabilir
+              if (v == 'logout') await _logout(context);
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: 'fetchTrends',
-                child: Text(
-                  'Trendleri Doldur (Dev)',
-                  style: TextStyle(color: GlamoraColors.deepNavy),
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'suggest',
-                child: Text(
-                  'Kombin Öner (Callable)',
-                  style: TextStyle(color: GlamoraColors.deepNavy),
-                ),
-              ),
-              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -118,11 +99,11 @@ class HomePage extends StatelessWidget {
                 ),
               ),
             ],
-          )
-
+          ),
         ],
       ),
 
+      // 🔹 Ana içerik (örnek trend kartları)
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -135,114 +116,18 @@ class HomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // 🔹 Trend kartları (senin orijinal haliyle)
-          Container(
-            decoration: BoxDecoration(
-              color: GlamoraColors.softWhite,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: GlamoraColors.deepNavy.withOpacity(0.15),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  child: Image.asset(
-                    'assets/images/glamora_logo.png',
-                    fit: BoxFit.cover,
-                    height: 200,
-                    width: double.infinity,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Midnight Elegance",
-                        style: TextStyle(
-                          color: GlamoraColors.deepNavy,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        "Silky navy tones matched with warm beige accessories — a modern classic look.",
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          _trendCard(
+            image: 'assets/images/glamora_logo.png',
+            title: "Midnight Elegance",
+            desc:
+            "Silky navy tones matched with warm beige accessories — a modern classic look.",
           ),
-
           const SizedBox(height: 24),
-
-          Container(
-            decoration: BoxDecoration(
-              color: GlamoraColors.softWhite,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: GlamoraColors.deepNavy.withOpacity(0.15),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  child: Image.asset(
-                    'assets/images/glamora_harf_logo.png',
-                    fit: BoxFit.cover,
-                    height: 200,
-                    width: double.infinity,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    "Soft beige tones dominate this week’s top picks.",
-                    style: TextStyle(
-                      color: GlamoraColors.deepNavy,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          _trendCard(
+            image: 'assets/images/glamora_harf_logo.png',
+            title: "Soft Beige Harmony",
+            desc:
+            "Soft beige tones dominate this week’s top picks — simple yet timeless.",
           ),
         ],
       ),
@@ -253,14 +138,8 @@ class HomePage extends StatelessWidget {
         unselectedItemColor: Colors.black54,
         showUnselectedLabels: true,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Trends",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checkroom),
-            label: "Wardrobe",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Trends"),
+          BottomNavigationBarItem(icon: Icon(Icons.checkroom), label: "Wardrobe"),
         ],
         onTap: (index) {
           if (index == 1) {
@@ -270,6 +149,52 @@ class HomePage extends StatelessWidget {
             );
           }
         },
+      ),
+    );
+  }
+
+  Widget _trendCard({required String image, required String title, required String desc}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: GlamoraColors.softWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: GlamoraColors.deepNavy.withOpacity(0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+            child: Image.asset(image, fit: BoxFit.cover, height: 200, width: double.infinity),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        color: GlamoraColors.deepNavy,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18)),
+                const SizedBox(height: 6),
+                Text(desc,
+                    style: const TextStyle(color: Colors.black87, fontSize: 14, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

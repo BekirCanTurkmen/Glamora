@@ -6,6 +6,9 @@ class GlamoraColors {
   static const Color deepNavy = Color(0xFF13224F);      // Gradient secondary
   static const Color creamBeige = Color(0xFFF6EFD9);    // Accent / buttons
   static const Color softWhite = Color.fromRGBO(255, 255, 255, 0.08); // Cards
+  static const Color champagne = Color(0xFFF6EFD9); // bej-altın ton
+  static const Color beige = Color(0xFFEADBC8);
+  static const Color blush = Color(0xFFF3E5D8);
 }
 
 /// 🧵 Centralized ThemeData for the Glamora app
