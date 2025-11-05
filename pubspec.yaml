@@ -35,6 +35,10 @@ dependencies:
   shimmer: ^3.0.0               # Altın parlama efekti
   flutter_animate: ^4.5.0       # Ek animasyon efektleri
 
+  # --- Hava Durumu ve Konum ---
+  geolocator: ^10.1.0           # Kullanıcı konumunu almak için
+  geocoding: ^2.1.1             # Enlem-boylam → şehir ismine çevirme
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

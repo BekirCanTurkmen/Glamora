@@ -5,6 +5,7 @@ import '../theme/glamora_theme.dart';
 import 'chat_page.dart';
 import '../services/chat_service.dart';
 import 'add_friend_page.dart';
+import 'dart:async';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -13,17 +14,39 @@ class ChatListPage extends StatefulWidget {
   State<ChatListPage> createState() => _ChatListPageState();
 }
 
-class _ChatListPageState extends State<ChatListPage> {
+class _ChatListPageState extends State<ChatListPage>
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   final _chatService = ChatService();
   String _searchQuery = '';
 
+  bool _showToast = false;
+  String _toastMessage = "";
+  late AnimationController _toastController;
+  late Animation<Offset> _toastOffset;
+
   @override
   void initState() {
     super.initState();
-    _listenForFriendRequests(); // 🔔 canlı bildirim
+    _listenForFriendRequests();
+
+    // 🔹 Toast animasyonu ayarı
+    _toastController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _toastOffset =
+        Tween<Offset>(begin: const Offset(0, -1.0), end: const Offset(0, 0))
+            .animate(CurvedAnimation(
+          parent: _toastController,
+          curve: Curves.easeOutCubic,
+        ));
+  }
+
+  @override
+  void dispose() {
+    _toastController.dispose();
+    super.dispose();
   }
 
   // 🔹 Yeni arkadaşlık isteği bildirimi dinleyicisi
@@ -37,47 +60,36 @@ class _ChatListPageState extends State<ChatListPage> {
         .listen((snapshot) {
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
-          _showFriendRequestPopup(change.doc.id);
+          _showAnimatedToast(change.doc.id);
         }
       }
     });
   }
 
-  Future<void> _showFriendRequestPopup(String fromUid) async {
+  Future<void> _showAnimatedToast(String fromUid) async {
     final userDoc =
     await _firestore.collection('glamora_users').doc(fromUid).get();
     final data = userDoc.data() ?? {};
-    final username = data['username'] ?? 'Bilinmeyen kullanıcı';
+    final username = data['username'] ?? 'bir kullanıcı';
 
-    if (!mounted) return;
+    setState(() {
+      _toastMessage = "$username sana arkadaşlık isteği gönderdi 💌";
+      _showToast = true;
+    });
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Yeni Arkadaşlık İsteği 💌",
-          style: TextStyle(
-            color: GlamoraColors.deepNavy,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          "$username sana arkadaşlık isteği gönderdi.",
-          style: const TextStyle(color: GlamoraColors.deepNavy, fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Kapat",
-              style: TextStyle(color: GlamoraColors.deepNavy),
-            ),
-          ),
-        ],
-      ),
-    );
+    _toastController.forward();
+
+    // 3 saniye sonra otomatik olarak kapanır
+    Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        _toastController.reverse();
+        Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() => _showToast = false);
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -111,132 +123,185 @@ class _ChatListPageState extends State<ChatListPage> {
         ],
       ),
 
-      // 🔹 Ana içerik
-      body: Column(
+      body: Stack(
         children: [
-          // 🔍 Arama kutusu
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(
-                color: GlamoraColors.deepNavy,
-                fontWeight: FontWeight.w500,
-              ),
-              onChanged: (val) =>
-                  setState(() => _searchQuery = val.toLowerCase()),
-              decoration: InputDecoration(
-                hintText: "Kullanıcı adı ara...",
-                hintStyle: const TextStyle(
-                  color: GlamoraColors.deepNavy,
-                  fontWeight: FontWeight.w400,
-                ),
-                prefixIcon:
-                const Icon(Icons.search, color: GlamoraColors.deepNavy),
-                filled: true,
-                fillColor: Colors.white,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
+          // 🔹 Asıl içerik
+          Column(
+            children: [
+              // 🔍 Arama kutusu
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(
                     color: GlamoraColors.deepNavy,
-                    width: 1.3,
+                    fontWeight: FontWeight.w500,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: GlamoraColors.deepNavy,
-                    width: 2,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // 👥 Kullanıcı listesi
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore.collection('glamora_users').snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(
+                  onChanged: (val) =>
+                      setState(() => _searchQuery = val.toLowerCase()),
+                  decoration: InputDecoration(
+                    hintText: "Kullanıcı adı ara...",
+                    hintStyle: const TextStyle(
+                      color: GlamoraColors.deepNavy,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    prefixIcon: const Icon(Icons.search,
                         color: GlamoraColors.deepNavy),
-                  );
-                }
-
-                // 🔹 Kullanıcıları filtreleme (sadece username'i olanlar)
-                final users = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final username = data['username'] ?? '';
-                  final email = data['email'] ?? '';
-                  final uid = data['uid'] ?? '';
-
-                  // username boşsa veya kendi UID'imizse gösterme
-                  if (username.isEmpty || uid == currentUser.uid) return false;
-
-                  return _searchQuery.isEmpty ||
-                      username.toLowerCase().contains(_searchQuery) ||
-                      email.toLowerCase().contains(_searchQuery);
-                }).toList();
-
-                if (users.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "Henüz mesajlaşabileceğin bir kullanıcı yok.\nSağ üstten arkadaş ekleyebilirsin 💬",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
+                    filled: true,
+                    fillColor: Colors.white,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
                         color: GlamoraColors.deepNavy,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                        height: 1.5,
+                        width: 1.3,
                       ),
                     ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: users.length,
-                  itemBuilder: (context, index) {
-                    final data = users[index].data() as Map<String, dynamic>;
-                    final username = data['username'];
-                    final email = data['email'] ?? '';
-                    final uid = data['uid'] ?? '';
-
-                    return ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: GlamoraColors.deepNavy,
-                        child: Icon(Icons.person, color: Colors.white),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: GlamoraColors.deepNavy,
+                        width: 2,
                       ),
-                      title: Text(
-                        username,
-                        style: const TextStyle(
-                          color: GlamoraColors.deepNavy,
-                          fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              // 👥 Kullanıcı listesi
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _firestore.collection('glamora_users').snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                            color: GlamoraColors.deepNavy),
+                      );
+                    }
+
+                    final users = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final username = data['username'] ?? '';
+                      final email = data['email'] ?? '';
+                      final uid = data['uid'] ?? '';
+
+                      if (username.isEmpty || uid == currentUser.uid) {
+                        return false;
+                      }
+
+                      return _searchQuery.isEmpty ||
+                          username.toLowerCase().contains(_searchQuery) ||
+                          email.toLowerCase().contains(_searchQuery);
+                    }).toList();
+
+                    if (users.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "Henüz mesajlaşabileceğin bir kullanıcı yok.\nSağ üstten arkadaş ekleyebilirsin 💬",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: GlamoraColors.deepNavy,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            height: 1.5,
+                          ),
                         ),
-                      ),
-                      subtitle: Text(email),
-                      onTap: () async {
-                        final chatId =
-                        _chatService.generateChatId(currentUser.uid, uid);
-                        await _chatService.createChatIfNotExists(
-                            chatId, currentUser.uid, uid);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatPage(
-                              chatId: chatId,
-                              currentUserId: currentUser.uid,
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final data = users[index].data() as Map<String, dynamic>;
+                        final username = data['username'];
+                        final email = data['email'] ?? '';
+                        final uid = data['uid'] ?? '';
+
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: GlamoraColors.deepNavy,
+                            child: Icon(Icons.person, color: Colors.white),
+                          ),
+                          title: Text(
+                            username,
+                            style: const TextStyle(
+                              color: GlamoraColors.deepNavy,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                          subtitle: Text(email),
+                          onTap: () async {
+                            final chatId = _chatService.generateChatId(
+                                currentUser.uid, uid);
+                            await _chatService.createChatIfNotExists(
+                                chatId, currentUser.uid, uid);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatPage(
+                                  chatId: chatId,
+                                  currentUserId: currentUser.uid,
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
+
+          // 🔔 Üstten kayan Toast (Glamora Style)
+          if (_showToast)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: _toastOffset,
+                child: Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: GlamoraColors.deepNavy,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Icon(Icons.favorite, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _toastMessage,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () {
+                          _toastController.reverse();
+                          setState(() => _showToast = false);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
