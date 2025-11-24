@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'photo_uploader.dart';
+
 import '../theme/glamora_theme.dart';
-import 'clothing_detail_page.dart'; // Eğer ayrı dosyadaysa bu satır senin path’inle eşleşmeli
+import 'clothing_detail_page.dart';
+import 'photo_uploader.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -13,9 +14,9 @@ class WardrobePage extends StatefulWidget {
 }
 
 class _WardrobePageState extends State<WardrobePage> {
-  String selectedCategory = "All";
+  String selected = "All"; // Category + Brand state
 
-  final List<String> _categories = [
+  final List<String> categories = [
     "All",
     "Tops",
     "Bottoms",
@@ -24,26 +25,65 @@ class _WardrobePageState extends State<WardrobePage> {
     "Outerwear",
     "Accessories",
     "Others",
+    "Brands", // brand filter tab
   ];
 
-  // ✅ Artık doğru Firestore path: glamora_users/{uid}/wardrobe
-  Stream<QuerySnapshot<Map<String, dynamic>>> _getUserOutfits() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const Stream.empty();
+  /// ---------------------------------------------------------------------------
+  /// FETCH BRANDS SAFELY (NO CRASH)
+  /// ---------------------------------------------------------------------------
+  Future<List<String>> _fetchBrands() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    final ref = FirebaseFirestore.instance
-        .collection('glamora_users') // 🔹 Değiştirildi
-        .doc(user.uid)
-        .collection('wardrobe')
-        .orderBy('uploadedAt', descending: true);
+      final snap = await FirebaseFirestore.instance
+          .collection("glamora_users")
+          .doc(uid)
+          .collection("wardrobe")
+          .get();
 
-    if (selectedCategory == "All") {
-      return ref.snapshots();
-    } else {
-      return ref.where('category', isEqualTo: selectedCategory).snapshots();
+      final brands = snap.docs
+          .map((e) => (e.data()["brand"] ?? "").toString().trim())
+          .where((b) => b.isNotEmpty)
+          .toSet()
+          .toList();
+
+      return List<String>.from(brands);
+    } catch (e) {
+      print("BRAND FETCH ERROR → $e");
+      return [];
     }
   }
 
+  /// ---------------------------------------------------------------------------
+  /// STREAM WARDROBE ITEMS WITH CATEGORY / BRAND FILTER
+  /// ---------------------------------------------------------------------------
+  Stream<QuerySnapshot<Map<String, dynamic>>> _streamWardrobe() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    final baseRef = FirebaseFirestore.instance
+        .collection("glamora_users")
+        .doc(uid)
+        .collection("wardrobe")
+        .orderBy("uploadedAt", descending: true);
+
+    // BRAND FILTER
+    if (selected.startsWith("brand:")) {
+      final brandName = selected.replaceFirst("brand:", "");
+      return baseRef.where("brand", isEqualTo: brandName).snapshots();
+    }
+
+    // CATEGORY FILTER
+    if (selected != "All" && selected != "Brands") {
+      return baseRef.where("category", isEqualTo: selected).snapshots();
+    }
+
+    // DEFAULT → All items
+    return baseRef.snapshots();
+  }
+
+  /// ---------------------------------------------------------------------------
+  /// UI
+  /// ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,6 +92,7 @@ class _WardrobePageState extends State<WardrobePage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
         centerTitle: true,
         title: const Text(
           "My Wardrobe",
@@ -61,67 +102,183 @@ class _WardrobePageState extends State<WardrobePage> {
             fontSize: 22,
           ),
         ),
-        iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
       ),
 
       body: Column(
         children: [
-          // 🔹 Category filter bar
+          const SizedBox(height: 8),
+
+          /// -------------------------------------------------------------------
+          /// CATEGORY + BRAND TAB BAR
+          /// -------------------------------------------------------------------
           SizedBox(
             height: 50,
-            child: ListView.builder(
+            child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = selectedCategory == category;
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              children: categories.map((c) {
+                final isSelected = selected == c;
+
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(category),
+                    label: Text(c),
                     selected: isSelected,
+                    selectedColor: GlamoraColors.creamBeige,
                     backgroundColor: GlamoraColors.deepNavy,
                     labelStyle: TextStyle(
-                      color: isSelected
-                          ? GlamoraColors.deepNavy
-                          : Colors.white,
+                      color:
+                      isSelected ? GlamoraColors.deepNavy : Colors.white,
                       fontWeight: FontWeight.w500,
                     ),
-                    selectedColor: GlamoraColors.creamBeige,
-                    checkmarkColor: GlamoraColors.deepNavy,
-                    shape: RoundedRectangleBorder(
+                    onSelected: (_) {
+                      setState(() => selected = c);
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          /// -------------------------------------------------------------------
+          /// BRAND DROPDOWN (ONLY WHEN selected == "Brands")
+          /// -------------------------------------------------------------------
+          if (selected == "Brands")
+            FutureBuilder<List<String>>(
+              future: _fetchBrands(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(
+                      color: GlamoraColors.deepNavy,
+                    ),
+                  );
+                }
+
+                if (snap.hasError) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      "Failed to load brands.",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
+                final brands = snap.data ?? [];
+
+                // EMPTY BRAND LIST
+                if (brands.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: GlamoraColors.creamBeige.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isSelected
-                            ? GlamoraColors.creamBeige
-                            : GlamoraColors.deepNavy.withOpacity(0.4),
-                        width: 1,
+                    ),
+                    child: const Text(
+                      "No brands found.",
+                      style: TextStyle(
+                        color: GlamoraColors.deepNavy,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    onSelected: (_) => setState(() => selectedCategory = category),
+                  );
+                }
+
+                // BRAND LIST
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: GlamoraColors.creamBeige.withOpacity(0.75),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Select Brand",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: GlamoraColors.deepNavy,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      ...brands.map(
+                            (brand) => InkWell(
+                          onTap: () {
+                            setState(() {
+                              selected = "brand:$brand";
+                            });
+                          },
+                          child: Padding(
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              brand,
+                              style: const TextStyle(
+                                color: GlamoraColors.deepNavy,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const Divider(),
+
+                      InkWell(
+                        onTap: () {
+                          setState(() => selected = "All");
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            "Show All Brands",
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
                 );
               },
             ),
-          ),
 
-          // 🔹 Outfit Grid
+          /// -------------------------------------------------------------------
+          /// GRID — WARDROBE ITEMS
+          /// -------------------------------------------------------------------
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _getUserOutfits(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+              stream: _streamWardrobe(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
                   return const Center(
-                    child:
-                    CircularProgressIndicator(color: GlamoraColors.deepNavy),
+                    child: CircularProgressIndicator(
+                      color: GlamoraColors.deepNavy,
+                    ),
                   );
                 }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                final docs = snap.data!.docs;
+
+                if (docs.isEmpty) {
                   return const Center(
                     child: Text(
-                      "No outfits in this category yet.",
+                      "No items found.",
                       style: TextStyle(
                         color: GlamoraColors.deepNavy,
                         fontSize: 16,
@@ -130,64 +287,35 @@ class _WardrobePageState extends State<WardrobePage> {
                   );
                 }
 
-                final outfits = snapshot.data!.docs;
-
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     childAspectRatio: 0.8,
                   ),
-                  itemCount: outfits.length,
-                  itemBuilder: (context, index) {
-                    final data = outfits[index].data();
-                    final imageUrl = data['imageUrl'] ?? '';
+                  itemCount: docs.length,
+                  itemBuilder: (context, i) {
+                    final item = docs[i].data();
+                    final id = docs[i].id;
 
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ClothingDetailPage(
-                              data: data,
-                              docId: outfits[index].id,
-                            ),
+                            builder: (_) =>
+                                ClothingDetailPage(data: item, docId: id),
                           ),
                         );
-                      }
-                      ,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            loadingBuilder:
-                                (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                    color: GlamoraColors.deepNavy),
-                              );
-                            },
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(Icons.image_not_supported,
-                                  color: Colors.grey, size: 48),
-                            ),
-                          ),
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          item["imageUrl"],
+                          fit: BoxFit.cover,
                         ),
                       ),
                     );
@@ -199,11 +327,10 @@ class _WardrobePageState extends State<WardrobePage> {
         ],
       ),
 
-      // 🔹 Add outfit button
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: GlamoraColors.creamBeige,
         foregroundColor: GlamoraColors.deepNavy,
-        icon: const Icon(Icons.add_a_photo),
+        icon: const Icon(Icons.add),
         label: const Text("Add Outfit"),
         onPressed: () {
           Navigator.push(
