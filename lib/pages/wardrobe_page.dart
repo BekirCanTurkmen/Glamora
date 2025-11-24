@@ -150,10 +150,14 @@ class _WardrobePageState extends State<WardrobePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ClothingDetailPage(data: data),
+                            builder: (_) => ClothingDetailPage(
+                              data: data,
+                              docId: outfits[index].id,
+                            ),
                           ),
                         );
-                      },
+                      }
+                      ,
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
