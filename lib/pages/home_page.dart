@@ -4,11 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../pages/auth_page.dart';
 import '../theme/glamora_theme.dart';
 import '../widgets/weather_card.dart';
+import 'package:dolabim/pages/ai_chat_page.dart';
+
 import 'package:dolabim/pages/wardrobe_page.dart';
 import 'package:dolabim/pages/trend_match_test_page.dart';
 // import 'package:dolabim/pages/color_distribution_page.dart'; // Kullanılmıyorsa kapatılabilir
 import 'package:dolabim/pages/calendar_page.dart'; // ✅ YENİ: Takvim sayfası import edildi
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -75,44 +76,59 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
-            actions: [
-              IconButton(
-                tooltip: 'Mesajlaşma',
-                icon: const Icon(Icons.chat_bubble_outline),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ChatListPage()),
-                  );
-                },
-              ),
-              PopupMenuButton<String>(
-                color: const Color(0xFFF6EFD9),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                onSelected: (v) async {
-                  if (v == 'logout') await _logout(context);
-                },
-                itemBuilder: (_) => [
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout, color: Color(0xFFB33A3A)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Log Out',
-                          style: TextStyle(
-                            color: Color(0xFFB33A3A),
-                            fontWeight: FontWeight.w600,
-                          ),
+           actions: [
+            // 1️⃣ ESKİ MESAJLAŞMA BUTONU (Geri Geldi)
+            IconButton(
+              tooltip: 'Sohbetler',
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatListPage()),
+                );
+              },
+            ),
+
+            // 2️⃣ YENİ AI STİLİST BUTONU (Yanına Eklendi)
+            IconButton(
+              tooltip: 'AI Stilist',
+              icon: const Icon(Icons.auto_awesome), // Yıldız ikonu
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiChatPage()),
+                );
+              },
+            ),
+
+            // 3️⃣ ÇIKIŞ BUTONU (Aynı Kaldı)
+            PopupMenuButton<String>(
+              color: const Color(0xFFF6EFD9),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              onSelected: (v) async {
+                if (v == 'logout') await _logout(context);
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Color(0xFFB33A3A)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Log Out',
+                        style: TextStyle(
+                          color: Color(0xFFB33A3A),
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
+          ],
           ),
           
           // Ana İçerik

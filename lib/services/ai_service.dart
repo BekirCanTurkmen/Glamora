@@ -7,7 +7,7 @@ class AiService {
   static const String apiKey = "AIzaSyDZTV5brm7e8DBSgZqpJs9dKwneOBzXmHU";
 
   static final model = GenerativeModel(
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     apiKey: apiKey,
   );
 
