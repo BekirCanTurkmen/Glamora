@@ -3,10 +3,11 @@ import 'package:dolabim/pages/chat_list_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../pages/auth_page.dart';
 import '../theme/glamora_theme.dart';
-import '../widgets/weather_card.dart'; // ✅ yeni widget
+import '../widgets/weather_card.dart';
 import 'package:dolabim/pages/wardrobe_page.dart';
 import 'package:dolabim/pages/trend_match_test_page.dart';
-import 'package:dolabim/pages/color_distribution_page.dart';
+// import 'package:dolabim/pages/color_distribution_page.dart'; // Kullanılmıyorsa kapatılabilir
+import 'package:dolabim/pages/calendar_page.dart'; // ✅ YENİ: Takvim sayfası import edildi
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,16 +19,20 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Future<void> _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const AuthPage()),
-          (route) => false,
-    );
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AuthPage()),
+        (route) => false,
+      );
+    }
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
+    // StatefulBuilder içinde yerel state (selectedIndex) tutuluyor.
+    // Not: Normalde bu state'i _HomePageState içinde tutmak daha yaygındır ama
+    // mevcut yapını bozmadan içine entegre ettim.
     int selectedIndex = 0;
 
     return StatefulBuilder(
@@ -35,6 +40,7 @@ class _HomePageState extends State<HomePage> {
         void onItemTapped(int index) {
           setInnerState(() => selectedIndex = index);
 
+          // Sayfa Yönlendirmeleri
           if (index == 0) {
             Navigator.push(
               context,
@@ -44,6 +50,12 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const TrendMatchTestPage()),
+            );
+          } else if (index == 2) {
+            // ✅ YENİ: Takvim sayfasına yönlendirme
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CalendarPage()),
             );
           }
         }
@@ -102,10 +114,12 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
+          
+          // Ana İçerik
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const WeatherCard(),
+              const WeatherCard(), // Hava durumu kartı
               const SizedBox(height: 20),
               const Text(
                 "Trending Styles",
@@ -120,19 +134,19 @@ class _HomePageState extends State<HomePage> {
                 image: 'assets/images/glamora_logo.png',
                 title: "Midnight Elegance",
                 desc:
-                "Silky navy tones matched with warm beige accessories — a modern classic look.",
+                    "Silky navy tones matched with warm beige accessories — a modern classic look.",
               ),
               const SizedBox(height: 24),
               _trendCard(
                 image: 'assets/images/glamora_harf_logo.png',
                 title: "Soft Beige Harmony",
                 desc:
-                "Soft beige tones dominate this week’s top picks — simple yet timeless.",
+                    "Soft beige tones dominate this week’s top picks — simple yet timeless.",
               ),
             ],
           ),
 
-          // 🔹 ALT NAVIGATION BAR
+          // 🔹 GÜNCELLENEN ALT NAVIGATION BAR
           bottomNavigationBar: BottomNavigationBar(
             backgroundColor: const Color(0xFFF6EFD9),
             selectedItemColor: GlamoraColors.deepNavy,
@@ -148,6 +162,11 @@ class _HomePageState extends State<HomePage> {
                 icon: Icon(Icons.style_outlined),
                 label: "Trend Match",
               ),
+              // ✅ YENİ: Calendar Butonu
+              BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_month_outlined),
+                label: "Calendar",
+              ),
             ],
           ),
         );
@@ -155,10 +174,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Trend Kartı Tasarımı
   Widget _trendCard(
-      {required String image,
-        required String title,
-        required String desc}) {
+      {required String image, required String title, required String desc}) {
     return Container(
       decoration: BoxDecoration(
         color: GlamoraColors.softWhite,
