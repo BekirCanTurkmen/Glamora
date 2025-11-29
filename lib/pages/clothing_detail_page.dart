@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/glamora_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/ai_service.dart';
 
 class ClothingDetailPage extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -26,7 +27,7 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
     item = Map<String, dynamic>.from(widget.data);
   }
 
-  /// ---------- FIRESTORE UPDATE ----------
+  // ------------ FIRESTORE UPDATE ------------
   Future<void> updateField(String key, dynamic value) async {
     setState(() => item[key] = value);
 
@@ -42,148 +43,326 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
         .update({key: value});
   }
 
+  // ------------ OPTION LISTS ------------
+  final List<String> categoryOptions = [
+    "Tops",
+    "Bottoms",
+    "Dresses",
+    "Shoes",
+    "Outerwear",
+    "Accessories",
+    "Others",
+  ];
 
-  /// ---------- MODERN POPUP ----------
-  Future<void> editText(String label, String key) async {
-    final controller = TextEditingController(text: item[key] ?? "");
+  List<String> getDynamicSizeList() {
+    switch (item["category"]) {
+      case "Shoes":
+        return ["35", "36", "37", "38", "39", "40", "41", "42", "43"];
+      case "Bottoms":
+        return ["28", "29", "30", "31", "32", "33", "34", "36"];
+      case "Tops":
+      case "Outerwear":
+        return ["XS", "S", "M", "L", "XL"];
+      case "Dresses":
+        return ["XS", "S", "M", "L"];
+      default:
+        return ["XS", "S", "M", "L", "XL", "36", "38", "40"];
+    }
+  }
 
-    final result = await showDialog<String>(
+  final List<String> stateOptions = [
+    "New",
+    "Like New",
+    "Used",
+    "Worn",
+  ];
+
+  final Map<String, IconData> stateIcons = {
+    "New": Icons.fiber_new,
+    "Like New": Icons.check_circle,
+    "Used": Icons.history,
+    "Worn": Icons.warning_amber,
+  };
+
+  // ------------ GENERIC SELECTOR DIALOG ------------
+  Future<String?> selectFromList(String title, List<String> options) async {
+    return await showDialog<String>(
       context: context,
       builder: (_) {
         return Dialog(
-          backgroundColor: Colors.white,   // POPUP ARKA PLAN BEYAZ
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Edit $label",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: GlamoraColors.deepNavy,
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: GlamoraColors.deepNavy)),
+                const SizedBox(height: 14),
+
+                ...options.map((opt) => InkWell(
+                  onTap: () => Navigator.pop(context, opt),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(opt,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: GlamoraColors.deepNavy)),
                   ),
-                ),
+                )),
 
-                const SizedBox(height: 16),
-
-                TextField(
-                  controller: controller,
-                  style: const TextStyle(
-                    color: GlamoraColors.deepNavy,   // ← METİN LACİVERT
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  cursorColor: GlamoraColors.deepNavy,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,         // ← ARKA PLAN BEYAZ
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: GlamoraColors.deepNavy,
-                        width: 1.3,
-                      ),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                      borderSide: BorderSide(
-                        color: GlamoraColors.deepNavy,
-                        width: 1.8,
-                      ),
-                    ),
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        "Cancel",
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: GlamoraColors.deepNavy,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 12),
-                      ),
-                      onPressed: () =>
-                          Navigator.pop(context, controller.text.trim()),
-                      child: const Text("Save"),
-                    ),
-                  ],
-                ),
+                const Divider(),
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Cancel"))
               ],
             ),
           ),
         );
+      },
+    );
+  }
 
+  // ------------ CATEGORY SELECTOR ------------
+  Future<void> editCategory() async {
+    final result = await selectFromList("Select Category", categoryOptions);
+    if (result != null) {
+      updateField("category", result);
+      final newSizes = getDynamicSizeList();
+      if (!newSizes.contains(item["size"])) {
+        updateField("size", "-");
+      }
+    }
+  }
+
+  // ------------ SIZE SELECTOR ------------
+  Future<void> editSize() async {
+    final sizeList = getDynamicSizeList();
+    final result = await selectFromList("Select Size", sizeList);
+    if (result != null) updateField("size", result);
+  }
+
+  // ------------ BRAND SEARCH DROPDOWN ------------
+  Future<void> editBrand() async {
+    final controller = TextEditingController();
+
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    final snap = await FirebaseFirestore.instance
+        .collection("glamora_users")
+        .doc(uid)
+        .collection("wardrobe")
+        .get();
+
+    List<String> allBrands = snap.docs
+        .map((e) => (e.data()["brand"] ?? "").toString().trim())
+        .where((b) => b.isNotEmpty)
+        .toSet()
+        .toList();
+
+    String? result = await showDialog<String>(
+        context: context,
+        builder: (_) {
+          return StatefulBuilder(builder: (context, setStateX) {
+            List<String> filtered = allBrands
+                .where((b) =>
+                b.toLowerCase().contains(controller.text.toLowerCase()))
+                .toList();
+
+            return Dialog(
+              shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Text("Select Brand",
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: GlamoraColors.deepNavy)),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: controller,
+                    onChanged: (_) => setStateX(() {}),
+                    decoration: const InputDecoration(
+                      hintText: "Search...",
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 200,
+                    child: ListView(
+                      children: [
+                        ...filtered.map((b) => ListTile(
+                          title: Text(b),
+                          onTap: () => Navigator.pop(context, b),
+                        )),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Cancel"))
+                ]),
+              ),
+            );
+          });
+        });
+
+    if (result != null) updateField("brand", result);
+  }
+
+  // ------------ SEASON (AI SUGGESTION) ------------
+  Future<void> editSeason() async {
+    // AI’dan öneri alıyoruz
+    final aiPrompt =
+        "Aşağıdaki kıyafet için uygun sezonu öner: kategori: ${item["category"]}, renk: ${item["colorLabel"]}. Cevap sadece bir kelime olsun (Spring, Summer, Fall, Winter).";
+
+    String? aiSuggestion = await AiService.askGemini(aiPrompt) ?? "Summer";
+
+    aiSuggestion = aiSuggestion.trim().split(" ").first;
+
+    final seasonList = ["Spring", "Summer", "Fall", "Winter"];
+
+    final result = await selectFromList(
+      "Select Season (AI suggests: $aiSuggestion)",
+      seasonList,
+    );
+
+    if (result != null) updateField("season", result);
+  }
+
+  // ------------ STATE (ICON SELECTOR) ------------
+  Future<void> editState() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) {
+        return Dialog(
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Text("Select Condition",
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: GlamoraColors.deepNavy)),
+              const SizedBox(height: 14),
+              ...stateOptions.map((s) => ListTile(
+                leading: Icon(stateIcons[s], color: GlamoraColors.deepNavy),
+                title: Text(s,
+                    style: const TextStyle(
+                        color: GlamoraColors.deepNavy,
+                        fontWeight: FontWeight.w600)),
+                onTap: () => Navigator.pop(context, s),
+              )),
+              const Divider(),
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"))
+            ]),
+          ),
+        );
       },
     );
 
-    if (result != null) updateField(key, result);
+    if (result != null) updateField("state", result);
   }
 
-  /// ---------- CLICKABLE FIELD ----------
-  Widget editableRow(String label, String key) {
+  // ------------ PRICE ------------
+  Future<void> editPrice() async {
+    final controller =
+    TextEditingController(text: item["price"]?.toString() ?? "");
+
+    final result = await showDialog<String>(
+        context: context,
+        builder: (_) {
+          return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              backgroundColor: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Text("Edit Price",
+                      style: TextStyle(
+                          fontSize: 20,
+                          color: GlamoraColors.deepNavy,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: "Enter price"),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pop(context, controller.text.trim()),
+                      child: const Text("Save"))
+                ]),
+              ));
+        });
+
+    if (result != null) updateField("price", result);
+  }
+
+  // ------------ DATE PICKER ------------
+  Future<void> editDate() async {
+    final initial = DateTime.tryParse(item["datePurchased"] ?? "") ??
+        DateTime.now();
+
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+
+    if (selected != null) {
+      updateField("datePurchased",
+          selected.toIso8601String().split("T")[0]);
+    }
+  }
+
+  // ------------ CUSTOM ROW ------------
+  Widget customRow(String label, dynamic value, VoidCallback onTap) {
     return InkWell(
-      onTap: () => editText(label, key),
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        width: double.infinity,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: GlamoraColors.deepNavy,
-              ),
-            ),
-            Text(
-              item[key]?.toString().isNotEmpty == true
-                  ? item[key].toString()
-                  : "-",
-              style: const TextStyle(color: Colors.black54),
-            ),
+            Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: GlamoraColors.deepNavy)),
+            Text(value?.toString().isNotEmpty == true ? value.toString() : "-",
+                style: const TextStyle(color: Colors.black54)),
           ],
         ),
       ),
     );
   }
 
-  /// ---------- MAIN UI ----------
+  // ------------ UI ------------
   @override
   Widget build(BuildContext context) {
     final imageUrl = item['imageUrl'] ?? "";
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -192,31 +371,27 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: Column(
         children: [
           AspectRatio(
-            aspectRatio: 1,
-            child: Image.network(imageUrl, fit: BoxFit.cover),
-          ),
-
+              aspectRatio: 1, child: Image.network(imageUrl, fit: BoxFit.cover)),
           const Divider(),
 
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                editableRow("Category", "category"),
-                editableRow("Brand", "brand"),
-                editableRow("Size", "size"),
-                editableRow("Price", "price"),
-                editableRow("Season", "season"),
-                editableRow("State", "state"),
-                editableRow("Date Purchased", "datePurchased"),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  customRow("Category", item["category"], editCategory),
+                  customRow("Brand", item["brand"], editBrand),
+                  customRow("Size", item["size"], editSize),
+                  customRow("Color", item["colorLabel"], () {}),
+                  customRow("Price", item["price"], editPrice),
+                  customRow("Season", item["season"], editSeason),
+                  customRow("State", item["state"], editState),
+                  customRow(
+                      "Date Purchased", item["datePurchased"], editDate),
+                ],
+              ))
         ],
       ),
     );
