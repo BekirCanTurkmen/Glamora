@@ -5,7 +5,10 @@ import '../services/ai_service.dart';
 import '../theme/glamora_theme.dart';
 
 class AiChatPage extends StatefulWidget {
-  const AiChatPage({super.key});
+  // 🔥 YENİ: Dışarıdan otomatik mesaj alabilir
+  final String? initialPrompt; 
+
+  const AiChatPage({super.key, this.initialPrompt});
 
   @override
   State<AiChatPage> createState() => _AiChatPageState();
@@ -15,22 +18,51 @@ class _AiChatPageState extends State<AiChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
-  // Başlangıç mesajı
   final List<Map<String, String>> _messages = [
     {"sender": "ai", "text": "Selam! Ben Glamora Stilist. Dolabındaki kıyafetleri biliyorum. Bugün ne giymek istersin?"}
   ];
   
   bool _isLoading = false;
 
-  /// 👗 1. ADIM: Dolaptaki Kıyafetleri Metne Dönüştür
+  @override
+  void initState() {
+    super.initState();
+    // 🚀 EĞER DIŞARIDAN MESAJ GELDİYSE OTOMATİK BAŞLAT
+    if (widget.initialPrompt != null) {
+      // Sayfa çizildikten hemen sonra çalışsın diye gecikme veriyoruz
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sendAutoMessage(widget.initialPrompt!);
+      });
+    }
+  }
+
+  // Otomatik mesaj gönderme (Kullanıcı baloncuğu oluşturmadan direkt sorgu yapar)
+  Future<void> _sendAutoMessage(String prompt) async {
+    setState(() {
+      _isLoading = true;
+      // İstersen promptu ekranda gösterebilirsin ama çok uzun olduğu için gizli tutmak daha şık olabilir.
+      // Şimdilik kullanıcı sormuş gibi gösterelim:
+      _messages.add({"sender": "user", "text": "Bana bugünkü verilerime göre bir kombin öner."}); 
+    });
+    _scrollToBottom();
+
+    final response = await AiService.askGemini(prompt);
+
+    setState(() {
+      _messages.add({"sender": "ai", "text": response ?? "Bir hata oluştu."});
+      _isLoading = false;
+    });
+    _scrollToBottom();
+  }
+
+  /// 👗 Dolap verisi çekme (Normal sohbet için)
   Future<String> _getWardrobeContext() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return "Kullanıcı bilgisi bulunamadı.";
 
     try {
-      // ⚠️ DİKKAT: Veritabanındaki koleksiyon adın 'users' ise burayı 'users' yap!
       final snapshot = await FirebaseFirestore.instance
-          .collection('glamora_users') 
+          .collection('glamora_users') // 'users' ise değiştir
           .doc(uid)
           .collection('wardrobe')
           .get();
@@ -40,17 +72,15 @@ class _AiChatPageState extends State<AiChatPage> {
       List<String> items = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        final category = data['category'] ?? 'Bilinmeyen Kategori';
-        final color = data['colorLabel'] ?? 'Renk belirtilmemiş';
-        items.add("- $category ($color)");
+        items.add("- ${data['category'] ?? 'Eşya'} (${data['colorLabel'] ?? '?'})");
       }
-
       return items.join("\n");
     } catch (e) {
       return "Dolap verisi alınamadı.";
     }
   }
 
+  // Normal manuel mesaj gönderme
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -62,21 +92,15 @@ class _AiChatPageState extends State<AiChatPage> {
     _controller.clear();
     _scrollToBottom();
 
-    // 🧠 2. ADIM: Dolap bilgisini çek ve soruyla birleştir
     final wardrobeString = await _getWardrobeContext();
     
     final fullPrompt = """
     Sen kişisel bir moda asistanısın. Benim gardırobumda şu kıyafetler var:
-    
     $wardrobeString
     
-    Lütfen SADECE bu dolaptaki kıyafetleri veya bunlara çok uyumlu olabilecek parçaları kullanarak şu soruma cevap ver: 
-    "$text"
-    
-    Cevabı kısa, samimi ve öneri odaklı ver.
+    Kullanıcı sorusu: "$text"
     """;
 
-    // 3. ADIM: Gemini'ye sor
     final response = await AiService.askGemini(fullPrompt);
 
     setState(() {
@@ -110,7 +134,6 @@ class _AiChatPageState extends State<AiChatPage> {
       ),
       body: Column(
         children: [
-          // 💬 MESAJ LİSTESİ
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
@@ -126,27 +149,20 @@ class _AiChatPageState extends State<AiChatPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                     decoration: BoxDecoration(
-                      color: isUser ? GlamoraColors.deepNavy : const Color(0xFFF0F0F0), // AI rengi biraz daha koyu gri
+                      color: isUser ? GlamoraColors.deepNavy : const Color(0xFFF5F5F5),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
                         bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
                         bottomRight: isUser ? Radius.zero : const Radius.circular(16),
                       ),
-                      boxShadow: [
-                         BoxShadow(
-                           color: Colors.black.withOpacity(0.05),
-                           blurRadius: 3,
-                           offset: const Offset(0, 1),
-                         )
-                      ]
                     ),
                     child: Text(
                       msg['text']!,
                       style: TextStyle(
                         color: isUser ? Colors.white : Colors.black87,
                         fontSize: 15,
-                        height: 1.4, // Satır aralığı okumayı kolaylaştırır
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -161,58 +177,33 @@ class _AiChatPageState extends State<AiChatPage> {
               child: LinearProgressIndicator(color: GlamoraColors.deepNavy, backgroundColor: Color(0xFFE0E0E0)),
             ),
 
-          // ⌨️ YAZI YAZMA ALANI (DÜZELTİLDİ)
-          SafeArea( // ✅ Alttan çentik payı bırakır
+          // Input Area
+          SafeArea(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)), // Üste ince çizgi
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5)
-                  )
-                ],
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      minLines: 1,
-                      maxLines: 3, // Çok satırlı yazmaya izin verir
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
-                        hintText: "Örn: Yarın ne giyeyim?",
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
+                        hintText: "Bir şeyler sor...",
                         filled: true,
-                        fillColor: const Color(0xFFF5F5F5), // Hafif gri arka plan
+                        fillColor: const Color(0xFFF5F5F5),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(color: Colors.grey.shade300), // Kenarlık rengi
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(color: GlamoraColors.deepNavy), // Tıklanınca lacivert olsun
-                        ),
                       ),
+                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Gönder Butonu
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: GlamoraColors.deepNavy,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
-                      onPressed: _sendMessage,
-                    ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send_rounded, color: GlamoraColors.deepNavy),
+                    onPressed: _sendMessage,
                   ),
                 ],
               ),

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:dolabim/pages/chat_list_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../pages/auth_page.dart';
 import '../theme/glamora_theme.dart';
 import '../widgets/weather_card.dart';
 import 'package:dolabim/pages/ai_chat_page.dart';
-
 import 'package:dolabim/pages/wardrobe_page.dart';
 import 'package:dolabim/pages/trend_match_test_page.dart';
 import 'package:dolabim/pages/calendar_page.dart';
+import '../services/ai_service.dart';
+import 'package:dolabim/pages/photo_uploader.dart';
+import 'package:dolabim/pages/outfit_result_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,37 +21,159 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int selectedIndex = 0; // 🔥 ASLA NEGATİF/100 OLMAYACAK
+  int selectedIndex = 0;
+  
+  // ⏳ YÜKLENİYOR DURUMU (Progress Bar Kontrolü)
+  bool _isGenerating = false; 
+
+  // 🎭 MOD SİSTEMİ
+  String _selectedMoodLabel = "Happy";
+  
+  final List<Map<String, dynamic>> _moods = [
+    {"label": "Happy", "icon": Icons.sentiment_satisfied_alt_rounded},
+    {"label": "Business", "icon": Icons.business_center_rounded},
+    {"label": "Casual", "icon": Icons.local_cafe_rounded},
+    {"label": "Party", "icon": Icons.celebration_rounded},
+    {"label": "Lazy", "icon": Icons.weekend_rounded},
+    {"label": "Date", "icon": Icons.favorite_rounded},
+  ];
 
   Future<void> _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const AuthPage()),
-          (route) => false,
+      (route) => false,
     );
+  }
+
+  // 🚀 SİHİRLİ FONKSİYON (Loading State Eklenmiş)
+  Future<void> _generateSmartOutfit(BuildContext context) async {
+    // 1. Yükleniyor durumunu başlat
+    setState(() {
+      _isGenerating = true;
+    });
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() => _isGenerating = false);
+      return;
+    }
+
+    try {
+      // 2. Trendleri Çek
+      String liveTrendInfo = await AiService.fetchCurrentTrends();
+
+      // 3. Gardırop Verisini Çek
+      List<String> inventoryList = [];
+      
+      final snap = await FirebaseFirestore.instance
+          .collection('glamora_users') 
+          .doc(uid)
+          .collection('wardrobe')
+          .get();
+
+      if (snap.docs.isNotEmpty) {
+        inventoryList = snap.docs.map((d) {
+          final data = d.data();
+          final category = data['category'] ?? 'Kategori Yok';
+          final color = data['colorLabel'] ?? 'Renk Yok';
+          final brand = data['brand'] ?? '';
+          return "ID: ${d.id}, Kategori: $category, Renk: $color, Marka: $brand";
+        }).toList();
+      }
+
+      if (inventoryList.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("HATA: Dolap boş! Önce kıyafet ekleyin.")),
+          );
+        }
+        // İşlem bitti, loading kapat
+        setState(() => _isGenerating = false);
+        return;
+      }
+
+      String weatherContext = "Hava: Parçalı Bulutlu, 18°C";
+      String moodContext = "Mod: $_selectedMoodLabel";
+
+      // 4. Prompt Hazırla
+      String systemPrompt = """
+      **ROL:**
+      Sen, JSON formatında yanıt veren gelişmiş bir "Kişisel Stilist API"sisin.
+      
+      **GÖREV:**
+      Aşağıdaki envanteri analiz et ve kurallara uyarak JSON üret.
+      
+      **VERİLER:**
+      - Trendler: $liveTrendInfo
+      - Durum: $weatherContext, $moodContext
+      - ENVANTER LİSTESİ:
+      ${inventoryList.join("\n")}
+
+      **KURALLAR:**
+      1. SADECE geçerli bir JSON objesi döndür. Markdown (```json) kullanma.
+      2. "selected_item_id" ve "alternative_item_id" alanlarına ENVANTER LİSTESİNDEKİ "ID" değerlerini birebir kopyala.
+      3. Head, Top, Bottom, Shoes ve Accessory (varsa) için slot oluştur.
+      
+      **İSTENEN JSON FORMATI:**
+      {
+        "outfit_summary": "Kombinin kısa, havalı başlığı",
+        "total_style_score": "10 üzerinden uyum puanı",
+        "calendar_entry": {
+          "title": "Bugünün Kombini",
+          "description": "Detaylar..."
+        },
+        "items": [
+          {
+            "slot": "Top",
+            "selected_item_id": "BURAYA_ENVANTERDEN_ID_GELMELI",
+            "item_name": "Kıyafetin Adı",
+            "reason": "Sebebi...",
+            "alternative_item_id": "BURAYA_ALTERNATIF_ID_GELMELI"
+          }
+        ]
+      }
+      """;
+
+      // 5. AI'ya Sor
+      String? jsonResponse = await AiService.askGemini(systemPrompt);
+      
+      if (jsonResponse != null) {
+        jsonResponse = jsonResponse.replaceAll('```json', '').replaceAll('```', '').trim();
+
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OutfitResultPage(jsonResult: jsonResponse!, userId: uid),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Bir hata oluştu: $e")));
+      }
+    } finally {
+      // 6. İşlem bitti (Başarılı veya Hatalı), Loading'i kapat
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+    }
   }
 
   void _onNavTap(int index) {
     setState(() => selectedIndex = index);
-
     if (index == 0) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WardrobePage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const WardrobePage()));
     } else if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const TrendMatchTestPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const TrendMatchTestPage()));
     } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const CalendarPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarPage()));
     }
   }
 
@@ -56,142 +181,237 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          "Glamora Trends",
+          "Glamora",
           style: TextStyle(
             color: GlamoraColors.deepNavy,
             fontWeight: FontWeight.bold,
-            fontSize: 22,
+            fontSize: 24,
+            letterSpacing: 1,
           ),
         ),
-        iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_bubble_outline),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ChatListPage()),
-              );
-            },
+            icon: const Icon(Icons.chat_bubble_outline, color: GlamoraColors.deepNavy),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListPage())),
           ),
           IconButton(
-            icon: const Icon(Icons.auto_awesome),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AiChatPage()),
-              );
-            },
+            icon: const Icon(Icons.auto_awesome, color: GlamoraColors.deepNavy),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatPage())),
           ),
           PopupMenuButton<String>(
-            onSelected: (v) async {
-              if (v == 'logout') await _logout(context);
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                  value: 'logout',
-                  child: Text("Log Out", style: TextStyle(color: Colors.red)))
-            ],
+            icon: const Icon(Icons.more_vert, color: GlamoraColors.deepNavy),
+            color: Colors.white,
+            onSelected: (v) async { if (v == 'logout') await _logout(context); },
+            itemBuilder: (_) => [const PopupMenuItem(value: 'logout', child: Text("Log Out"))],
           ),
         ],
       ),
-
+      
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
           const WeatherCard(),
-          const SizedBox(height: 20),
-          const Text(
-            "Trending Styles",
+          
+          const SizedBox(height: 30),
+          
+          // --- MOOD SEÇİCİ ---
+          Text(
+            "How are you feeling?",
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: GlamoraColors.deepNavy,
+              color: GlamoraColors.deepNavy.withOpacity(0.8),
             ),
+          ),
+          const SizedBox(height: 16),
+          
+          SizedBox(
+            height: 90, 
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _moods.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final mood = _moods[index];
+                final isSelected = _selectedMoodLabel == mood['label'];
+                
+                return GestureDetector(
+                  onTap: () {
+                    // Yüklenirken mod değiştirmeyi engelleyelim
+                    if (!_isGenerating) {
+                      setState(() => _selectedMoodLabel = mood['label']);
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 75,
+                    decoration: BoxDecoration(
+                      color: isSelected ? GlamoraColors.deepNavy : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? Colors.transparent : Colors.grey.shade200,
+                        width: 1.5
+                      ),
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: GlamoraColors.deepNavy.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        )
+                      ] : [],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          mood['icon'],
+                          color: isSelected ? Colors.white : GlamoraColors.deepNavy,
+                          size: 28,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          mood['label'],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          // --- 🪄 SİHİRLİ BUTON (YÜKLENİYOR ANİMASYONLU) ---
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isGenerating ? Colors.grey.shade300 : GlamoraColors.deepNavy,
+                elevation: _isGenerating ? 0 : 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              // Eğer yükleniyorsa butona basılamaz (null)
+              onPressed: _isGenerating ? null : () => _generateSmartOutfit(context),
+              child: _isGenerating 
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      SizedBox(
+                        width: 24, 
+                        height: 24, 
+                        child: CircularProgressIndicator(
+                          color: GlamoraColors.deepNavy, 
+                          strokeWidth: 2.5
+                        )
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Analyzing Wardrobe...", // Yüklenirken yazan yazı
+                        style: TextStyle(fontSize: 16, color: GlamoraColors.deepNavy, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  )
+                : Row( // Normal Durum
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.auto_awesome, color: Colors.white),
+                      SizedBox(width: 12),
+                      Text(
+                        "Generate Daily Outfit",
+                        style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+            ),
+          ),
+
+          const SizedBox(height: 40),
+          
+          const Text(
+            "Trending Now",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: GlamoraColors.deepNavy),
           ),
           const SizedBox(height: 16),
           _trendCard(
             image: 'assets/images/glamora_logo.png',
             title: "Midnight Elegance",
-            desc:
-            "Silky navy tones matched with warm beige accessories — a modern classic look.",
+            desc: "Silky navy tones matched with warm beige.",
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           _trendCard(
             image: 'assets/images/glamora_harf_logo.png',
             title: "Soft Beige Harmony",
-            desc:
-            "Soft beige tones dominate this week’s top picks — simple yet timeless.",
+            desc: "Soft beige tones dominate this week.",
           ),
         ],
       ),
 
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PhotoUploader())),
+        backgroundColor: Colors.white,
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: GlamoraColors.deepNavy, size: 30),
+      ),
+      
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xFFF6EFD9),
-        selectedItemColor: Colors.grey.shade600,    // 🔥 HomePage seçili görünmesin
-        unselectedItemColor: Colors.grey.shade600,  // 🔥 Tamamen eşit renk
-
-        currentIndex: selectedIndex, // 🔥 GARANTİ 0–2 ARASI
+        backgroundColor: Colors.white,
+        selectedItemColor: GlamoraColors.deepNavy,
+        unselectedItemColor: Colors.grey.shade400,
+        currentIndex: selectedIndex,
         onTap: _onNavTap,
-
+        showUnselectedLabels: false,
+        elevation: 20,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checkroom_outlined),
-            label: "Wardrobe",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.style_outlined),
-            label: "Trend Match",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: "Calendar",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.checkroom_rounded), label: "Wardrobe"),
+          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome_mosaic_rounded), label: "Trends"),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: "Calendar"),
         ],
       ),
     );
   }
 
-  Widget _trendCard({
-    required String image,
-    required String title,
-    required String desc,
-  }) {
+  Widget _trendCard({required String image, required String title, required String desc}) {
     return Container(
       decoration: BoxDecoration(
-        color: GlamoraColors.softWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: GlamoraColors.deepNavy.withOpacity(0.15),
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.asset(image, height: 200, fit: BoxFit.cover),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            child: Image.asset(image, height: 180, width: double.infinity, fit: BoxFit.cover),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: GlamoraColors.deepNavy,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18)),
+                Text(title, style: const TextStyle(color: GlamoraColors.deepNavy, fontWeight: FontWeight.bold, fontSize: 18)),
                 const SizedBox(height: 6),
-                Text(desc,
-                    style: const TextStyle(color: Colors.black87, fontSize: 14))
+                Text(desc, style: TextStyle(color: Colors.grey.shade600, fontSize: 14))
               ],
             ),
           )

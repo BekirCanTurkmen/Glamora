@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/glamora_theme.dart';
+import 'package:dolabim/pages/outfit_result_page.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -16,7 +17,8 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<DateTime, List<dynamic>> _events = {};
-
+  
+  // Seçili gün varsayılan olarak bugün olsun
   @override
   void initState() {
     super.initState();
@@ -24,42 +26,44 @@ class _CalendarPageState extends State<CalendarPage> {
     _fetchEvents();
   }
 
-  /// 🔥 Firestore'dan Etkinlikleri Çekme
   Future<void> _fetchEvents() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final snap = await FirebaseFirestore.instance
-        .collection('users') // Koleksiyon adın 'glamora_users' ise burayı değiştir
-        .doc(uid)
-        .collection('planner')
-        .get();
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('glamora_users')
+          .doc(uid)
+          .collection('planner')
+          .get();
 
-    final Map<DateTime, List<dynamic>> loadedEvents = {};
+      final Map<DateTime, List<dynamic>> loadedEvents = {};
 
-    for (var doc in snap.docs) {
-      final data = doc.data();
-      // data['date'] null gelirse hata vermesin diye kontrol
-      if (data['date'] == null) continue;
+      for (var doc in snap.docs) {
+        final data = doc.data();
+        if (data['date'] == null) continue;
 
-      final date = (data['date'] as Timestamp).toDate();
-      // Saat farkını yok et (Sadece Yıl-Ay-Gün)
-      final dayKey = DateTime(date.year, date.month, date.day);
+        final date = (data['date'] as Timestamp).toDate();
+        final dayKey = DateTime(date.year, date.month, date.day);
 
-      if (loadedEvents[dayKey] == null) {
-        loadedEvents[dayKey] = [];
+        if (loadedEvents[dayKey] == null) {
+          loadedEvents[dayKey] = [];
+        }
+        
+        final eventData = data;
+        eventData['id'] = doc.id; 
+        
+        loadedEvents[dayKey]!.add(eventData);
       }
-      
-      // Doküman ID'sini de ekleyelim ki silerken lazım olur
-      final eventData = data;
-      eventData['id'] = doc.id; 
-      
-      loadedEvents[dayKey]!.add(eventData);
-    }
 
-    setState(() {
-      _events = loadedEvents;
-    });
+      if (mounted) {
+        setState(() {
+          _events = loadedEvents;
+        });
+      }
+    } catch (e) {
+      print("Takvim hatası: $e");
+    }
   }
 
   List<dynamic> _getEventsForDay(DateTime day) {
@@ -67,113 +71,10 @@ class _CalendarPageState extends State<CalendarPage> {
     return _events[normalizedDay] ?? [];
   }
 
-  /// 👗 Gardıroptan Kıyafet Seçme Penceresi (YENİ ÖZELLİK)
-  void _showWardrobePicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true, // Tam ekran boyu için izin ver
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        final uid = FirebaseAuth.instance.currentUser!.uid;
-        
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6, // Ekranın %60'ı kadar açıl
-          child: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  "Gardırobundan Seç", 
-                  style: TextStyle(
-                    fontSize: 18, 
-                    fontWeight: FontWeight.bold, 
-                    color: GlamoraColors.deepNavy
-                  )
-                ),
-              ),
-              Expanded(
-                // Gardırop koleksiyonunu dinliyoruz
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('glamora_users') // DİKKAT: Senin wardrobe_page'de bu isim kullanılmıştı
-                      .doc(uid)
-                      .collection('wardrobe')
-                      .orderBy('uploadedAt', descending: true)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(child: Text("Gardırobun boş! Önce kıyafet yükle."));
-                    }
-                    
-                    final docs = snapshot.data!.docs;
-
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemCount: docs.length,
-                      itemBuilder: (context, index) {
-                        final data = docs[index].data() as Map<String, dynamic>;
-                        final imageUrl = data['imageUrl'];
-                        final category = data['category'] ?? 'Outfit';
-
-                        return GestureDetector(
-                          onTap: () async {
-                            // Seçilen resmi takvime kaydet
-                            await _savePlanToFirestore(imageUrl, category);
-                            if (mounted) Navigator.pop(context); // Pencereyi kapat
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(imageUrl, fit: BoxFit.cover),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Seçimi Veritabanına Kaydetme
-  Future<void> _savePlanToFirestore(String imageUrl, String note) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('planner')
-        .add({
-      'date': Timestamp.fromDate(_selectedDay!),
-      'imageUrl': imageUrl, // Resim URL'si
-      'note': note,         // Kategori adı
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    
-    // Listeyi yenile ki ekranda hemen görünsün
-    _fetchEvents(); 
-  }
-  
-  /// Planı Silme Fonksiyonu
   Future<void> _deleteEvent(String docId) async {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       await FirebaseFirestore.instance
-        .collection('users')
+        .collection('glamora_users')
         .doc(uid)
         .collection('planner')
         .doc(docId)
@@ -181,102 +82,372 @@ class _CalendarPageState extends State<CalendarPage> {
       _fetchEvents();
   }
 
+  // 🔥 ÇOKLU SEÇİM PENCERESİ
+  void _showMultiSelectPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return _MultiSelectWardrobe(
+          selectedDay: _selectedDay!,
+          onSaved: () {
+            Navigator.pop(context);
+            _fetchEvents(); // Listeyi yenile
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final todayEvents = _getEventsForDay(_selectedDay!);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
-        title: const Text("Outfit Calendar", style: TextStyle(color: GlamoraColors.deepNavy)),
+        title: const Text("Outfit Calendar", style: TextStyle(color: GlamoraColors.deepNavy, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
       ),
+      
       body: Column(
         children: [
-          // TAKVİM BÖLÜMÜ
-          TableCalendar(
-            firstDay: DateTime.utc(2024, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            },
-            onFormatChanged: (format) {
-              setState(() => _calendarFormat = format);
-            },
-            eventLoader: _getEventsForDay, 
-            calendarStyle: const CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: GlamoraColors.creamBeige,
-                shape: BoxShape.circle,
+          // 📅 TAKVİM KARTI (GÖRSEL DÜZELTME YAPILDI)
+       // 📅 TAKVİM KARTI
+          Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))
+              ],
+            ),
+            child: TableCalendar(
+              firstDay: DateTime.utc(2024, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: _focusedDay,
+              calendarFormat: _calendarFormat,
+              
+              // 🔥 GÖRSEL DÜZELTME: Satır yüksekliği ve renkler
+              rowHeight: 42, 
+              headerStyle: const HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                titleTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: GlamoraColors.deepNavy),
+                leftChevronIcon: Icon(Icons.chevron_left, color: GlamoraColors.deepNavy),
+                rightChevronIcon: Icon(Icons.chevron_right, color: GlamoraColors.deepNavy),
               ),
-              selectedDecoration: BoxDecoration(
-                color: GlamoraColors.deepNavy,
-                shape: BoxShape.circle,
+              
+              // 🎨 GÜNLERİN RENKLERİNİ ZORLA AYARLIYORUZ
+              daysOfWeekStyle: const DaysOfWeekStyle(
+                weekdayStyle: TextStyle(color: GlamoraColors.deepNavy, fontWeight: FontWeight.bold),
+                weekendStyle: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
               ),
-              markerDecoration: BoxDecoration(
-                color: Colors.redAccent,
-                shape: BoxShape.circle,
+              calendarStyle: const CalendarStyle(
+                defaultTextStyle: TextStyle(color: Colors.black87), // Hafta içi rengi
+                weekendTextStyle: TextStyle(color: Colors.black87), // Hafta sonu rengi
+                outsideTextStyle: TextStyle(color: Colors.grey),    // Diğer ay günleri
+                
+                todayDecoration: BoxDecoration(color: GlamoraColors.creamBeige, shape: BoxShape.circle),
+                selectedDecoration: BoxDecoration(color: GlamoraColors.deepNavy, shape: BoxShape.circle),
+                todayTextStyle: TextStyle(color: GlamoraColors.deepNavy, fontWeight: FontWeight.bold),
+                selectedTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
+
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+              onFormatChanged: (format) {
+                setState(() => _calendarFormat = format);
+              },
+              eventLoader: _getEventsForDay, 
             ),
           ),
           
-          const SizedBox(height: 8),
-          const Divider(),
-          
-          // GÜNLÜK PLAN LİSTESİ
-          Expanded(
-            child: _getEventsForDay(_selectedDay!).isEmpty 
-            ? const Center(child: Text("Bugün için plan yok."))
-            : ListView(
-              children: _getEventsForDay(_selectedDay!).map((event) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(8),
-                    // Eğer resim varsa göster, yoksa ikon göster
-                    leading: event['imageUrl'] != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              event['imageUrl'], 
-                              width: 50, 
-                              height: 50, 
-                              fit: BoxFit.cover
-                            ),
-                          )
-                        : const Icon(Icons.checkroom, size: 40),
-                    
-                    title: Text(
-                      event['note'] ?? 'Plan', 
-                      style: const TextStyle(fontWeight: FontWeight.bold)
-                    ),
-                    subtitle: const Text("Planlanan Kıyafet"),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: () {
-                         if (event['id'] != null) {
-                             _deleteEvent(event['id']);
-                         }
-                      },
-                    ),
-                  ),
-                );
-              }).toList(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  "Plans for this day", 
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: GlamoraColors.deepNavy.withOpacity(0.8))
+                ),
+                const Spacer(),
+                Text("${todayEvents.length} items", style: TextStyle(color: Colors.grey.shade500)),
+              ],
             ),
+          ),
+          
+          // 📋 LİSTE
+          Expanded(
+            child: todayEvents.isEmpty 
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.event_note_rounded, size: 60, color: Colors.grey.shade300),
+                    const SizedBox(height: 10),
+                    Text("Nothing planned.", style: TextStyle(color: Colors.grey.shade500)),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: todayEvents.length,
+                itemBuilder: (context, index) {
+                  return _buildEventCard(todayEvents[index]);
+                },
+              ),
           ),
         ],
       ),
       
-      // EKLEME BUTONU
-      floatingActionButton: FloatingActionButton(
+      // ➕ ÇOKLU EKLEME BUTONU
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: GlamoraColors.deepNavy,
-        onPressed: _showWardrobePicker, // ARTIK GARDIROBU AÇIYOR
-        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: _showMultiSelectPicker, 
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text("Add Items", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  Widget _buildEventCard(dynamic event) {
+    final bool isAiOutfit = event['outfitData'] != null; 
+    final String title = event['note'] ?? 'Plan';
+    final String imageUrl = event['imageUrl'] ?? ''; 
+
+    return GestureDetector(
+      onTap: () {
+        if (isAiOutfit) {
+          final uid = FirebaseAuth.instance.currentUser!.uid;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OutfitResultPage(
+                userId: uid,
+                outfitMap: event['outfitData'],
+                planId: event['id'], // 🔥 ID'yi gönderiyoruz ki güncelleyebilsin
+              ),
+            ),
+          ).then((_) => _fetchEvents()); // Dönünce yenile
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isAiOutfit ? Border.all(color: GlamoraColors.deepNavy.withOpacity(0.1), width: 1.5) : null,
+          boxShadow: [
+            BoxShadow(color: Colors.grey.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4))
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 70, height: 70,
+                color: Colors.grey.shade100,
+                child: isAiOutfit
+                    ? Container(
+                        color: GlamoraColors.deepNavy.withOpacity(0.05),
+                        child: const Icon(Icons.auto_awesome, color: GlamoraColors.deepNavy),
+                      )
+                    : imageUrl.isNotEmpty
+                        ? Image.network(imageUrl, fit: BoxFit.cover)
+                        : const Icon(Icons.checkroom),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isAiOutfit ? GlamoraColors.deepNavy.withOpacity(0.1) : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isAiOutfit ? "✨ AI Outfit" : "📌 Manual Item",
+                      style: TextStyle(
+                        fontSize: 10, 
+                        fontWeight: FontWeight.bold,
+                        color: isAiOutfit ? GlamoraColors.deepNavy : Colors.grey.shade700
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: GlamoraColors.deepNavy),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete_outline_rounded, color: Colors.red.withOpacity(0.6)),
+              onPressed: () {
+                 if (event['id'] != null) _deleteEvent(event['id']);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// 🧩 ÇOKLU SEÇİM İÇİN ALT WIDGET
+class _MultiSelectWardrobe extends StatefulWidget {
+  final DateTime selectedDay;
+  final VoidCallback onSaved;
+
+  const _MultiSelectWardrobe({required this.selectedDay, required this.onSaved});
+
+  @override
+  State<_MultiSelectWardrobe> createState() => _MultiSelectWardrobeState();
+}
+
+class _MultiSelectWardrobeState extends State<_MultiSelectWardrobe> {
+  final Set<String> _selectedIds = {}; // Seçilenlerin ID'leri
+  final Map<String, dynamic> _selectedData = {}; // Kaydetmek için data
+
+  Future<void> _saveSelection() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (var id in _selectedIds) {
+      final item = _selectedData[id];
+      final docRef = FirebaseFirestore.instance
+          .collection('glamora_users')
+          .doc(uid)
+          .collection('planner')
+          .doc(); // Yeni ID
+      
+      batch.set(docRef, {
+        'date': Timestamp.fromDate(widget.selectedDay),
+        'imageUrl': item['imageUrl'],
+        'note': "${item['brand']} ${item['category']}",
+        'type': 'manual',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
+    widget.onSaved();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    return FractionallySizedBox(
+      heightFactor: 0.85,
+      child: Column(
+        children: [
+          Container(
+            width: 40, height: 4, margin: const EdgeInsets.only(top: 12, bottom: 20),
+            decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Select Items", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: GlamoraColors.deepNavy)),
+                if (_selectedIds.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: _saveSelection,
+                    icon: const Icon(Icons.check),
+                    label: Text("Add (${_selectedIds.length})"),
+                    style: TextButton.styleFrom(backgroundColor: GlamoraColors.deepNavy, foregroundColor: Colors.white),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('glamora_users')
+                  .doc(uid)
+                  .collection('wardrobe')
+                  .orderBy('uploadedAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                
+                final docs = snapshot.data!.docs;
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.8,
+                  ),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final id = docs[index].id;
+                    final isSelected = _selectedIds.contains(id);
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedIds.remove(id);
+                            _selectedData.remove(id);
+                          } else {
+                            _selectedIds.add(id);
+                            _selectedData[id] = data;
+                          }
+                        });
+                      },
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // RESİM
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(data['imageUrl'] ?? '', fit: BoxFit.cover),
+                          ),
+                          // SEÇİLİ KATMANI (YEŞİL PERDE)
+                          if (isSelected)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: GlamoraColors.deepNavy.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white, width: 3),
+                              ),
+                              child: const Center(child: Icon(Icons.check_circle, color: Colors.white, size: 30)),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
