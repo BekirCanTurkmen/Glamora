@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dolabim/pages/clothing_detail_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:flutter/material.dart';
 import '../theme/glamora_theme.dart';
-import 'clothing_detail_page.dart';
-import 'photo_uploader.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -13,90 +11,70 @@ class WardrobePage extends StatefulWidget {
   State<WardrobePage> createState() => _WardrobePageState();
 }
 
-class _WardrobePageState extends State<WardrobePage> {
-  String selected = "All"; // Category + Brand state
+class _WardrobePageState extends State<WardrobePage>
+    with AutomaticKeepAliveClientMixin {
+
+  @override
+  bool get wantKeepAlive => true;   // 🔥 KEEP ALIVE ÇALIŞTIR
+
+  String selectedCategory = "All";
 
   final List<String> categories = [
     "All",
     "Tops",
     "Bottoms",
     "Dresses",
-    "Shoes",
     "Outerwear",
+    "Footwear",
     "Accessories",
-    "Others",
-    "Brands", // brand filter tab
+    "Brands",
   ];
 
-  /// ---------------------------------------------------------------------------
-  /// FETCH BRANDS SAFELY (NO CRASH)
-  /// ---------------------------------------------------------------------------
-  Future<List<String>> _fetchBrands() async {
-    try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-
-      final snap = await FirebaseFirestore.instance
-          .collection("glamora_users")
-          .doc(uid)
-          .collection("wardrobe")
-          .get();
-
-      final brands = snap.docs
-          .map((e) => (e.data()["brand"] ?? "").toString().trim())
-          .where((b) => b.isNotEmpty)
-          .toSet()
-          .toList();
-
-      return List<String>.from(brands);
-    } catch (e) {
-      print("BRAND FETCH ERROR → $e");
-      return [];
-    }
-  }
-
-  /// ---------------------------------------------------------------------------
-  /// STREAM WARDROBE ITEMS WITH CATEGORY / BRAND FILTER
-  /// ---------------------------------------------------------------------------
-  Stream<QuerySnapshot<Map<String, dynamic>>> _streamWardrobe() {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    final baseRef = FirebaseFirestore.instance
-        .collection("glamora_users")
-        .doc(uid)
-        .collection("wardrobe")
-        .orderBy("uploadedAt", descending: true);
-
-    // BRAND FILTER
-    if (selected.startsWith("brand:")) {
-      final brandName = selected.replaceFirst("brand:", "");
-      return baseRef.where("brand", isEqualTo: brandName).snapshots();
-    }
-
-    // CATEGORY FILTER
-    if (selected != "All" && selected != "Brands") {
-      return baseRef.where("category", isEqualTo: selected).snapshots();
-    }
-
-    // DEFAULT → All items
-    return baseRef.snapshots();
-  }
-
-  /// ---------------------------------------------------------------------------
-  /// UI
-  /// ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    super.build(context); // 🔥 MUTLAKA GEREKLİ
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Center(child: Text("No user logged in"));
+    }
+
+    final wardrobeRef = FirebaseFirestore.instance
+        .collection("glamora_users")
+        .doc(user.uid)
+        .collection("wardrobe");
+
+    Query<Map<String, dynamic>> query = wardrobeRef.orderBy(
+      "uploadedAt",
+      descending: true,
+    );
+
+// CATEGORY FILTER (Tops, Bottoms, Dresses...)
+    if (categories.contains(selectedCategory) &&
+        selectedCategory != "All" &&
+        selectedCategory != "Brands") {
+      query = query.where("category", isEqualTo: selectedCategory);
+    }
+
+// BRAND FILTER
+    else if (!categories.contains(selectedCategory) &&
+        selectedCategory != "All" &&
+        selectedCategory != "Brands") {
+      query = query.where("brand", isEqualTo: selectedCategory);
+    }
+
+
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: GlamoraColors.deepNavy),
-        centerTitle: true,
-        title: const Text(
-          "My Wardrobe",
-          style: TextStyle(
+        iconTheme: const IconThemeData(
+          color: GlamoraColors.deepNavy,
+        ),
+        title: Text(
+          selectedCategory == "All" ? "My Wardrobe" : selectedCategory,
+          style: const TextStyle(
             color: GlamoraColors.deepNavy,
             fontWeight: FontWeight.bold,
             fontSize: 22,
@@ -106,166 +84,68 @@ class _WardrobePageState extends State<WardrobePage> {
 
       body: Column(
         children: [
-          const SizedBox(height: 8),
-
-          /// -------------------------------------------------------------------
-          /// CATEGORY + BRAND TAB BAR
-          /// -------------------------------------------------------------------
+          // CATEGORY FILTER BAR
           SizedBox(
-            height: 50,
+            height: 55,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              children: categories.map((c) {
-                final isSelected = selected == c;
-
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: categories.map((cat) {
+                final isSelected = selectedCategory == cat;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(right: 10),
                   child: ChoiceChip(
-                    label: Text(c),
-                    selected: isSelected,
-                    selectedColor: GlamoraColors.creamBeige,
-                    backgroundColor: GlamoraColors.deepNavy,
-                    labelStyle: TextStyle(
-                      color:
-                      isSelected ? GlamoraColors.deepNavy : Colors.white,
-                      fontWeight: FontWeight.w500,
+                    label: Text(
+                      cat,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : GlamoraColors.deepNavy,
+                        fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.w500,
+                      ),
                     ),
-                    onSelected: (_) {
-                      setState(() => selected = c);
+                    selected: isSelected,
+                    selectedColor: GlamoraColors.deepNavy,
+                    backgroundColor: Colors.grey.shade200,
+                    onSelected: (v) async {
+                      if (cat == "Brands") {
+                        // Brand seçim ekranına git
+                        final selectedBrand = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => _buildBrandListScreen(wardrobeRef),
+                          ),
+                        );
+
+                        // Kullanıcı bir brand seçip döndüyse filtreyi uygula
+                        if (selectedBrand != null) {
+                          setState(() {
+                            selectedCategory = selectedBrand;
+                          });
+                        }
+
+                        return; // ❗ Brands açıldığı için Wardrobe filtren çizilmesin
+                      }
+
+                      // Normal kategoriler (Tops, Bottoms, Dresses...)
+                      setState(() {
+                        selectedCategory = cat;
+                      });
                     },
+
                   ),
                 );
               }).toList(),
             ),
           ),
 
-          /// -------------------------------------------------------------------
-          /// BRAND DROPDOWN (ONLY WHEN selected == "Brands")
-          /// -------------------------------------------------------------------
-          if (selected == "Brands")
-            FutureBuilder<List<String>>(
-              future: _fetchBrands(),
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(
-                      color: GlamoraColors.deepNavy,
-                    ),
-                  );
-                }
-
-                if (snap.hasError) {
-                  return const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      "Failed to load brands.",
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
-
-                final brands = snap.data ?? [];
-
-                // EMPTY BRAND LIST
-                if (brands.isEmpty) {
-                  return Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: GlamoraColors.creamBeige.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      "No brands found.",
-                      style: TextStyle(
-                        color: GlamoraColors.deepNavy,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                }
-
-                // BRAND LIST
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: GlamoraColors.creamBeige.withOpacity(0.75),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Select Brand",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: GlamoraColors.deepNavy,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      ...brands.map(
-                            (brand) => InkWell(
-                          onTap: () {
-                            setState(() {
-                              selected = "brand:$brand";
-                            });
-                          },
-                          child: Padding(
-                            padding:
-                            const EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              brand,
-                              style: const TextStyle(
-                                color: GlamoraColors.deepNavy,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const Divider(),
-
-                      InkWell(
-                        onTap: () {
-                          setState(() => selected = "All");
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 6),
-                          child: Text(
-                            "Show All Brands",
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
-                );
-              },
-            ),
-
-          /// -------------------------------------------------------------------
-          /// GRID — WARDROBE ITEMS
-          /// -------------------------------------------------------------------
+          // WARDROBE LIST
           Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _streamWardrobe(),
-              builder: (context, snap) {
-                if (!snap.hasData) {
+            child: StreamBuilder<QuerySnapshot>(
+              stream: query.snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                     child: CircularProgressIndicator(
                       color: GlamoraColors.deepNavy,
@@ -273,12 +153,10 @@ class _WardrobePageState extends State<WardrobePage> {
                   );
                 }
 
-                final docs = snap.data!.docs;
-
-                if (docs.isEmpty) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(
                     child: Text(
-                      "No items found.",
+                      "No items found",
                       style: TextStyle(
                         color: GlamoraColors.deepNavy,
                         fontSize: 16,
@@ -287,35 +165,80 @@ class _WardrobePageState extends State<WardrobePage> {
                   );
                 }
 
+                final items = snapshot.data!.docs;
+
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
+                  itemCount: items.length,
                   gridDelegate:
                   const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.8,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.65,
                   ),
-                  itemCount: docs.length,
                   itemBuilder: (context, i) {
-                    final item = docs[i].data();
-                    final id = docs[i].id;
-
+                    final item = items[i].data() as Map<String, dynamic>;
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                ClothingDetailPage(data: item, docId: id),
+                            builder: (_) => ClothingDetailPage(
+                              data: item,
+                              docId: items[i].id,
+                            )
+
                           ),
                         );
                       },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          item["imageUrl"],
-                          fit: BoxFit.cover,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: GlamoraColors.softWhite,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: GlamoraColors.deepNavy.withOpacity(0.12),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              child: Image.network(
+                                item["imageUrl"],
+                                height: 160,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                item["brand"] ?? "Unknown Brand",
+                                style: const TextStyle(
+                                  color: GlamoraColors.deepNavy,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: Text(
+                                item["category"] ?? "-",
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -326,19 +249,77 @@ class _WardrobePageState extends State<WardrobePage> {
           ),
         ],
       ),
-
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: GlamoraColors.creamBeige,
-        foregroundColor: GlamoraColors.deepNavy,
-        icon: const Icon(Icons.add),
-        label: const Text("Add Outfit"),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PhotoUploader()),
-          );
-        },
-      ),
     );
   }
+
+  // BRAND FILTER SCREEN
+  Widget _buildBrandListScreen(CollectionReference ref) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: ref.snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final rawItems = snapshot.data!.docs;
+        final brandList = <String>{};
+
+        for (var doc in rawItems) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data["brand"] != null && data["brand"].toString().trim() != "") {
+            brandList.add(data["brand"]);
+          }
+        }
+
+        final brands = brandList.toList();
+
+        return Scaffold(
+          backgroundColor: GlamoraColors.softWhite, // 🔥 ESKİ DOĞRU ARKAPLAN
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            iconTheme: const IconThemeData(
+              color: GlamoraColors.deepNavy,
+            ),
+            title: const Text(
+              "Brands",
+              style: TextStyle(
+                color: GlamoraColors.deepNavy,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          body: ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: brands.length,
+            itemBuilder: (context, i) {
+              return Card(
+                elevation: 0,
+                color: Colors.white,
+                child: ListTile(
+                  title: Text(
+                    brands[i],
+                    style: const TextStyle(
+                      color: GlamoraColors.deepNavy, // 🔥 KESİN GÖRÜNÜR
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      selectedCategory = brands[i];
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
 }
