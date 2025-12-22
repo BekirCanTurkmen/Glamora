@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../theme/glamora_theme.dart';
 import 'package:dolabim/pages/photo_uploader.dart';
 import 'dart:math'; // Rastgele sayı üretmek için gerekli
+import 'package:palette_generator/palette_generator.dart';
 
 class WardrobePage extends StatefulWidget {
   const WardrobePage({super.key});
@@ -38,93 +39,117 @@ class _WardrobePageState extends State<WardrobePage>
     if (uid == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Rastgele kıyafetler üretiliyor..."), duration: Duration(milliseconds: 1500)),
+      const SnackBar(
+        content: Text("Rastgele kıyafetler ekleniyor (orta bölge renk analizi)..."),
+        duration: Duration(milliseconds: 1500),
+      ),
     );
 
-    // 1. Rastgelelik için Veri Havuzları
-    final List<String> brands = ["Zara", "H&M", "Nike", "Adidas", "Gucci", "Mango", "Bershka", "Pull&Bear", "Prada", "Louis Vuitton", "Stradivarius", "Koton"];
-    final List<String> colors = ["Red", "Blue", "Black", "White", "Green", "Yellow", "Pink", "Beige", "Grey", "Navy", "Purple", "Orange"];
-    
-    // 2. Kategoriye Özel Geniş Resim Havuzu
+    final random = Random();
+
+    final brands = [
+      "Zara","H&M","Nike","Adidas","Gucci",
+      "Mango","Bershka","Pull&Bear",
+      "Prada","Louis Vuitton","Stradivarius","Koton"
+    ];
+
     final Map<String, List<String>> categoryImages = {
       "Tops": [
-        "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80", // Beyaz T-shirt
-        "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80", // Siyah Crop
-        "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&q=80", // Gömlek
-        "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&q=80", // Siyah Basic
-        "https://images.unsplash.com/photo-1620799140408-ed5341cd2431?w=400&q=80", // Beyaz Bluz
-        "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400&q=80", // Desenli Gömlek
+        "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80",
+        "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80",
+        "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&q=80",
+        "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&q=80",
+        "https://images.unsplash.com/photo-1620799140408-ed5341cd2431?w=400&q=80",
+        "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=400&q=80",
       ],
       "Bottoms": [
-        "https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?w=400&q=80", // Kot
-        "https://images.unsplash.com/photo-1584370848010-d7cc31086f5b?w=400&q=80", // Gri Pantolon
-        "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&q=80", // Yırtık Kot
-        "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&q=80", // Bej Pantolon
-        "https://images.unsplash.com/photo-1475178626620-a4d074967452?w=400&q=80", // Kot Şort
-      ],
-      "Outerwear": [
-        "https://images.unsplash.com/photo-1551028919-ac7eddcb9885?w=400&q=80", // Deri Ceket
-        "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80", // Bej Ceket
-        "https://images.unsplash.com/photo-1544923246-77307dd654cb?w=400&q=80", // Kahverengi Kaban
-        "https://images.unsplash.com/photo-1520975916090-3105956dac38?w=400&q=80", // Denim Ceket
-        "https://images.unsplash.com/photo-1559551409-dadc959f76b8?w=400&q=80", // Trençkot
+        "https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?w=400&q=80",
+        "https://images.unsplash.com/photo-1584370848010-d7cc31086f5b?w=400&q=80",
+        "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400&q=80",
+        "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&q=80",
+        "https://images.unsplash.com/photo-1475178626620-a4d074967452?w=400&q=80",
       ],
       "Dresses": [
-        "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80", // Kırmızı Elbise
-        "https://images.unsplash.com/photo-1612336307429-8a898d10e223?w=400&q=80", // Siyah Elbise
-        "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80", // Beyaz Elbise
-        "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80", // Yazlık Elbise
-        "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80", // Çiçekli Elbise
+        "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80",
+        "https://images.unsplash.com/photo-1612336307429-8a898d10e223?w=400&q=80",
+        "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80",
+        "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&q=80",
+        "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80",
+      ],
+      "Outerwear": [
+        "https://images.unsplash.com/photo-1551028919-ac7eddcb9885?w=400&q=80",
+        "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80",
+        "https://images.unsplash.com/photo-1544923246-77307dd654cb?w=400&q=80",
+        "https://images.unsplash.com/photo-1520975916090-3105956dac38?w=400&q=80",
+        "https://images.unsplash.com/photo-1559551409-dadc959f76b8?w=400&q=80",
       ],
       "Footwear": [
-        "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&q=80", // Beyaz Sneaker
-        "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=400&q=80", // Bot
-        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&q=80", // Spor Ayakkabı
-        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80", // Mavi Topuklu
-        "https://images.unsplash.com/photo-1512374382149-233c42b6a83b?w=400&q=80", // Sarı Spor
+        "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&q=80",
+        "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=400&q=80",
+        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&q=80",
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80",
+        "https://images.unsplash.com/photo-1512374382149-233c42b6a83b?w=400&q=80",
       ],
       "Accessories": [
-        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80", // Kahverengi Çanta
-        "https://images.unsplash.com/photo-1523293188086-b520e57f6014?w=400&q=80", // Saat
-        "https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?w=400&q=80", // Sarı Çanta
-        "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400&q=80", // Altın Kolye
-        "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&q=80", // Güneş Gözlüğü
-      ]
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80",
+        "https://images.unsplash.com/photo-1523293188086-b520e57f6014?w=400&q=80",
+        "https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?w=400&q=80",
+        "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400&q=80",
+        "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&q=80",
+      ],
     };
 
     final batch = FirebaseFirestore.instance.batch();
-    final random = Random();
-    
-    // 🔥 HER SEFERİNDE 5 YENİ EŞYA EKLE
+
     for (int i = 0; i < 5; i++) {
-      // 1. Rastgele Kategori Seç (All ve Brands hariç)
-      // categories listesindeki 1. indeksten (Tops) 6. indekse (Accessories) kadar
-      String randomCategory = categories[random.nextInt(6) + 1]; 
-      
-      // 2. Rastgele Marka ve Renk
-      String randomBrand = brands[random.nextInt(brands.length)];
-      String randomColor = colors[random.nextInt(colors.length)];
-      
-      // 3. O Kategoriye Ait Rastgele Bir Resim
-      List<String>? images = categoryImages[randomCategory];
-      
-      // Eğer listede resim yoksa veya hata olursa varsayılan bir tane ata
-      String randomImage = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80"; 
-      if (images != null && images.isNotEmpty) {
-        randomImage = images[random.nextInt(images.length)];
-      }
+      final category = categories[random.nextInt(6) + 1];
+      final imageUrl =
+      categoryImages[category]![random.nextInt(categoryImages[category]!.length)];
+      final brand = brands[random.nextInt(brands.length)];
+
+      // 🎯 ORTA BÖLGE RENK ALGILAMA
+      String colorLabel = "Unknown";
+      try {
+        final palette = await PaletteGenerator.fromImageProvider(
+          NetworkImage(imageUrl),
+          region: const Rect.fromLTWH(0.25, 0.20, 0.50, 0.60),
+          size: const Size(200, 200),
+          maximumColorCount: 16,
+        );
+
+        final Color? picked =
+            palette.vibrantColor?.color ?? palette.dominantColor?.color;
+
+        if (picked != null) {
+          final hsv = HSVColor.fromColor(picked);
+          final h = hsv.hue;
+          final s = hsv.saturation;
+          final v = hsv.value;
+
+          if (v > 0.92 && s < 0.15) colorLabel = "White";
+          else if (v < 0.18) colorLabel = "Black";
+          else if (s < 0.12 && v < 0.85) colorLabel = "Grey";
+          else if (h < 15 || h >= 330) colorLabel = "Red";
+          else if (h < 35) colorLabel = "Orange";
+          else if (h < 55) colorLabel = "Yellow";
+          else if (h < 160) colorLabel = "Green";
+          else if (h < 250) colorLabel = "Blue";
+          else if (h < 290) colorLabel = "Purple";
+          else colorLabel = "Pink";
+        }
+      } catch (_) {}
 
       final docRef = FirebaseFirestore.instance
-          .collection('glamora_users') // Koleksiyon adı Home ile aynı olmalı
+          .collection("glamora_users")
           .doc(uid)
-          .collection('wardrobe')
-          .doc(); 
-      
+          .collection("wardrobe")
+          .doc();
+
       batch.set(docRef, {
-        "category": randomCategory,
-        "brand": randomBrand,
-        "colorLabel": randomColor,
-        "imageUrl": randomImage,
+        "category": category,
+        "brand": brand,
+        "colorLabel": colorLabel,
+        "imageUrl": imageUrl,
         "uploadedAt": Timestamp.now(),
       });
     }
@@ -133,10 +158,14 @@ class _WardrobePageState extends State<WardrobePage>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ +5 Yeni Rastgele Parça Eklendi!")),
+        const SnackBar(
+          content: Text("✅ +5 demo item eklendi (renkler doğru algılandı)"),
+        ),
       );
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
