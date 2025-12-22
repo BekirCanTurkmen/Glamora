@@ -12,6 +12,8 @@ import 'package:dolabim/pages/calendar_page.dart';
 import '../services/ai_service.dart';
 import 'package:dolabim/pages/photo_uploader.dart';
 import 'package:dolabim/pages/outfit_result_page.dart';
+import 'package:dolabim/pages/winter_trends_page.dart';
+import 'package:dolabim/pages/spring_trends_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -338,23 +340,55 @@ class _HomePageState extends State<HomePage> {
           ),
 
           const SizedBox(height: 40),
-          
+
           const Text(
             "Trending Now",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: GlamoraColors.deepNavy),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: GlamoraColors.deepNavy,
+            ),
           ),
           const SizedBox(height: 16),
-          _trendCard(
-            image: 'assets/images/glamora_logo.png',
-            title: "Midnight Elegance",
-            desc: "Silky navy tones matched with warm beige.",
+
+// HERO (MODA VİTRİNİ)
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const WinterTrendsPage(),
+                ),
+              );
+            },
+            child: _trendCard(
+              image: 'assets/images/glamora_logo.png',
+              title: "Winter Trends",
+              desc: "Key winter colors and styles shaping this season.",
+            ),
           ),
-          const SizedBox(height: 20),
-          _trendCard(
-            image: 'assets/images/glamora_harf_logo.png',
-            title: "Soft Beige Harmony",
-            desc: "Soft beige tones dominate this week.",
+
+
+          const SizedBox(height: 24),
+
+// EDITORIAL (DERGİ STİLİ)
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SpringTrendsPage(),
+                ),
+              );
+            },
+            child: _trendCard(
+              image: 'assets/images/glamora_harf_logo.png',
+              title: "Spring Trends",
+              desc: "A calm spring palette shaping this season.",
+            ),
           ),
+
+
         ],
       ),
 
@@ -383,17 +417,143 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _trendCard({required String image, required String title, required String desc}) {
+  Widget _trendCard({
+    required String image,
+    required String title,
+    required String desc,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Stack(
+        children: [
+          // 🔹 GÖRSEL (VİTRİN)
+          Image.asset(
+            image,
+            height: 240,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+
+          // 🔹 KARARTI (MODA / EDITORIAL HİSSİ)
+          Container(
+            height: 240,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withOpacity(0.65),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+
+          // 🔹 YAZILAR GÖRSEL ÜSTÜNDE
+          Positioned(
+            left: 20,
+            bottom: 22,
+            right: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }Widget _trendHeroCard({
+    required String image,
+    required String title,
+    required String subtitle,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Stack(
+        children: [
+          Image.asset(
+            image,
+            height: 260,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+          Container(
+            height: 260,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black.withOpacity(0.65),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 20,
+            bottom: 24,
+            right: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _trendEditorialCard({
+    required String image,
+    required String title,
+    required String subtitle,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -402,21 +562,41 @@ class _HomePageState extends State<HomePage> {
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Image.asset(image, height: 180, width: double.infinity, fit: BoxFit.cover),
+            child: Image.asset(
+              image,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: GlamoraColors.deepNavy, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: GlamoraColors.deepNavy,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(desc, style: TextStyle(color: Colors.grey.shade600, fontSize: 14))
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
+
 }
