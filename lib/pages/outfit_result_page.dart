@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/glamora_theme.dart';
 
 class OutfitResultPage extends StatefulWidget {
@@ -40,14 +41,70 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
         // items listesini de kopyalamamız lazım (Derin kopya için basit hack: encode/decode)
         outfitData = jsonDecode(jsonEncode(outfitData));
       } else if (widget.jsonResult != null) {
+        // ✅ JSON PARSE KONTROLÜ
         outfitData = jsonDecode(widget.jsonResult!);
+        
+        // ✅ SCHEMA VALİDASYONU
+        if (!outfitData.containsKey('items') || outfitData['items'] == null) {
+          throw FormatException('Missing items field in outfit data');
+        }
+        
+        if (!outfitData.containsKey('outfit_summary')) {
+          outfitData['outfit_summary'] = 'Daily Outfit';
+        }
+        
+        if (!outfitData.containsKey('total_style_score')) {
+          outfitData['total_style_score'] = '8';
+        }
+        
+        if (!outfitData.containsKey('calendar_entry')) {
+          outfitData['calendar_entry'] = {
+            'title': 'AI Generated Outfit',
+            'description': 'Smart outfit suggestion'
+          };
+        }
       } else {
-        outfitData = {};
+        throw Exception('No data provided');
       }
-      isLoading = false;
+      
+      setState(() {
+        isLoading = false;
+      });
+    } on FormatException catch (e) {
+      print('❌ JSON Format Error in OutfitResultPage: $e');
+      setState(() {
+        outfitData = {};
+        isLoading = false;
+      });
+      
+      // Show error to user
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to load outfit data. Invalid format.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
     } catch (e) {
-      outfitData = {};
-      isLoading = false;
+      print('❌ Error loading outfit data: $e');
+      setState(() {
+        outfitData = {};
+        isLoading = false;
+      });
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
     }
   }
 
@@ -256,7 +313,23 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: imageUrl.isNotEmpty
-                      ? Image.network(imageUrl, fit: BoxFit.cover)
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: GlamoraColors.deepNavy,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.broken_image, size: 40),
+                          ),
+                        )
                       : Container(color: Colors.grey.shade100, child: const Icon(Icons.checkroom)),
                 ),
               ),

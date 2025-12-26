@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dolabim/pages/chat_list_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert'; // JSON decode için
 import '../pages/auth_page.dart';
 import '../theme/glamora_theme.dart';
 import '../widgets/weather_card.dart';
@@ -14,6 +15,10 @@ import 'package:dolabim/pages/photo_uploader.dart';
 import 'package:dolabim/pages/outfit_result_page.dart';
 import 'package:dolabim/pages/winter_trends_page.dart';
 import 'package:dolabim/pages/spring_trends_page.dart';
+import 'package:dolabim/pages/social_feed_page.dart';
+import 'package:dolabim/pages/style_analytics_page.dart';
+import 'package:dolabim/pages/style_coach_page.dart';
+import 'package:dolabim/pages/trend_matcher_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -142,15 +147,62 @@ class _HomePageState extends State<HomePage> {
       // 5. AI'ya Sor
       String? jsonResponse = await AiService.askGemini(systemPrompt);
       
-      if (jsonResponse != null) {
-        jsonResponse = jsonResponse.replaceAll('```json', '').replaceAll('```', '').trim();
+      if (jsonResponse != null && jsonResponse.isNotEmpty) {
+        try {
+          // Markdown wrapper'larını temizle
+          jsonResponse = jsonResponse.replaceAll('```json', '').replaceAll('```', '').trim();
+          
+          // ✅ JSON PARSE KONTROLÜ
+          final Map<String, dynamic> parsed = jsonDecode(jsonResponse);
+          
+          // ✅ SCHEMA VALİDASYONU
+          if (!parsed.containsKey('items') || !parsed.containsKey('outfit_summary')) {
+            throw FormatException('AI response missing required fields');
+          }
+          
+          if (parsed['items'] == null || (parsed['items'] as List).isEmpty) {
+            throw FormatException('No outfit items returned');
+          }
 
+          // ✅ BAŞARILI - Navigate
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => OutfitResultPage(jsonResult: jsonResponse!, userId: uid),
+              ),
+            );
+          }
+        } on FormatException catch (e) {
+          // JSON parse hatası
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text("AI yanıtı beklenenden farklı geldi. Lütfen tekrar deneyin."),
+                backgroundColor: Colors.orange,
+                action: SnackBarAction(
+                  label: 'TEKRAR DENE',
+                  textColor: Colors.white,
+                  onPressed: () => _generateSmartOutfit(context),
+                ),
+              ),
+            );
+          }
+          print('❌ JSON Parse Error: $e');
+        } catch (e) {
+          // Diğer hatalar
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Beklenmeyen bir hata oluştu.")),
+            );
+          }
+          print('❌ Unexpected Error: $e');
+        }
+      } else {
+        // AI yanıt vermedi
         if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OutfitResultPage(jsonResult: jsonResponse!, userId: uid),
-            ),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("AI şu anda yanıt veremiyor. Lütfen daha sonra tekrar deneyin.")),
           );
         }
       }
@@ -173,7 +225,7 @@ class _HomePageState extends State<HomePage> {
     if (index == 0) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const WardrobePage()));
     } else if (index == 1) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const TrendMatchTestPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const TrendMatcherPage()));
     } else if (index == 2) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const CalendarPage()));
     }
@@ -198,12 +250,23 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.explore_rounded, color: GlamoraColors.deepNavy),
+            tooltip: 'Social Feed',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SocialFeedPage())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.insights_rounded, color: GlamoraColors.deepNavy),
+            tooltip: 'Style Analytics',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StyleAnalyticsPage())),
+          ),
+          IconButton(
             icon: const Icon(Icons.chat_bubble_outline, color: GlamoraColors.deepNavy),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListPage())),
           ),
           IconButton(
             icon: const Icon(Icons.auto_awesome, color: GlamoraColors.deepNavy),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatPage())),
+            tooltip: 'AI Style Coach',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StyleCoachPage())),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: GlamoraColors.deepNavy),

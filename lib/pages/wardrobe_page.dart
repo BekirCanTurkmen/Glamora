@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dolabim/pages/clothing_detail_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/glamora_theme.dart';
 import 'package:dolabim/pages/photo_uploader.dart';
-import 'dart:math'; // Rastgele sayı üretmek için gerekli
+import 'dart:math';
 import 'package:palette_generator/palette_generator.dart';
 
 class WardrobePage extends StatefulWidget {
@@ -355,13 +356,23 @@ class _WardrobePageState extends State<WardrobePage>
                                   topLeft: Radius.circular(12),
                                   topRight: Radius.circular(12),
                                 ),
-                                child: Hero( // 🔥 YENİ: Hero ile sarıldı
+                                child: Hero(
                                   tag: item["imageUrl"] ?? "hero_${items[i].id}",
-                                  child: Image.network(
-                                    item["imageUrl"] ?? "",
+                                  child: CachedNetworkImage(
+                                    imageUrl: item["imageUrl"] ?? "",
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => 
-                                      const Center(child: Icon(Icons.broken_image)),
+                                    placeholder: (context, url) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: GlamoraColors.deepNavy,
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => const Center(
+                                      child: Icon(Icons.broken_image, color: Colors.grey),
+                                    ),
                                   ),
                                 ),
                               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/glamora_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/ai_service.dart';
@@ -374,7 +375,39 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
       body: Column(
         children: [
           AspectRatio(
-              aspectRatio: 1, child: Image.network(imageUrl, fit: BoxFit.cover)),
+            aspectRatio: 1,
+            child: Hero(
+              tag: imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: GlamoraColors.deepNavy,
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[100],
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.broken_image, size: 80, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Image not available',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           const Divider(),
 
           Expanded(
