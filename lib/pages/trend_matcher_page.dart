@@ -9,7 +9,8 @@ class TrendMatcherPage extends StatefulWidget {
   State<TrendMatcherPage> createState() => _TrendMatcherPageState();
 }
 
-class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerProviderStateMixin {
+class _TrendMatcherPageState extends State<TrendMatcherPage>
+    with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _trendData;
   bool _isLoading = true;
   late AnimationController _pulseController;
@@ -111,16 +112,23 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
                                 return Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2 + _pulseController.value * 0.1),
+                                    color: Colors.white.withOpacity(
+                                      0.2 + _pulseController.value * 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.white.withOpacity(0.2),
-                                        blurRadius: 15 + _pulseController.value * 10,
+                                        blurRadius:
+                                            15 + _pulseController.value * 10,
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(Icons.trending_up_rounded, color: Colors.white, size: 32),
+                                  child: const Icon(
+                                    Icons.trending_up_rounded,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
                                 );
                               },
                             ),
@@ -181,7 +189,9 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFFf093fb).withOpacity(0.1 + _pulseController.value * 0.1),
+                      const Color(
+                        0xFFf093fb,
+                      ).withOpacity(0.1 + _pulseController.value * 0.1),
                       const Color(0xFFf5576c).withOpacity(0.05),
                     ],
                   ),
@@ -257,10 +267,14 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
               ),
               child: Column(
                 children: [
-                  Icon(Icons.trending_up_rounded, size: 48, color: Colors.grey[300]),
+                  Icon(
+                    Icons.trending_up_rounded,
+                    size: 48,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 12),
                   Text(
-                    'Trend analizi yapılıyor...',
+                    'Trend analysis in progress...',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -269,7 +283,7 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Gardırobunuza parça ekleyerek daha iyi sonuçlar alın',
+                    'Add items to your wardrobe for better results',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, color: Colors.grey[500]),
                   ),
@@ -277,8 +291,10 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
               ),
             )
           else
-            ...trends.map((trend) => _buildTrendCard(trend as Map<String, dynamic>)),
-          
+            ...trends.map(
+              (trend) => _buildTrendCard(trend as Map<String, dynamic>),
+            ),
+
           // Seasonal Tip
           if (seasonalTip.isNotEmpty) ...[
             const SizedBox(height: 24),
@@ -304,7 +320,7 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
   Widget _buildOverallMatchCard(int matchPercent, String topTrend) {
     Color matchColor;
     String matchLabel;
-    
+
     if (matchPercent >= 70) {
       matchColor = const Color(0xFF4CAF50);
       matchLabel = 'Trendsetter! 🔥';
@@ -368,10 +384,7 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
                     ),
                     Text(
                       'match',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                   ],
                 ),
@@ -379,14 +392,17 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
             ),
           ),
           const SizedBox(width: 24),
-          
+
           // Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -471,11 +487,12 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
     final name = trend['name'] as String? ?? '';
     final description = trend['description'] as String? ?? '';
     final matchPercent = trend['matchPercentage'] as int? ?? 0;
-    final matchingItems = (trend['matchingItems'] as List?)?.cast<String>() ?? [];
+    final matchingItems =
+        (trend['matchingItems'] as List?)?.cast<String>() ?? [];
     final missingItems = (trend['missingItems'] as List?)?.cast<String>() ?? [];
     final iconName = trend['icon'] as String? ?? 'checkroom';
     final colorHex = trend['color'] as String? ?? '#667eea';
-    
+
     final color = _parseColor(colorHex);
     final icon = _getIconData(iconName);
 
@@ -572,31 +589,44 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: matchingItems.map((item) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                )).toList(),
+                children: matchingItems
+                    .map(
+                      (item) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          item,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Missing Items
             if (missingItems.isNotEmpty) ...[
               Row(
                 children: [
-                  Icon(Icons.add_circle_outline, size: 16, color: Colors.orange[400]),
+                  Icon(
+                    Icons.add_circle_outline,
+                    size: 16,
+                    color: Colors.orange[400],
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Consider adding:',
@@ -612,29 +642,42 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: missingItems.map((item) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add, size: 14, color: Colors.orange[700]),
-                      const SizedBox(width: 4),
-                      Text(
-                        item,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange[700],
-                          fontWeight: FontWeight.w500,
+                children: missingItems
+                    .map(
+                      (item) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              size: 14,
+                              color: Colors.orange[700],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              item,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               ),
             ],
           ],
@@ -665,7 +708,11 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
               color: const Color(0xFFf5576c).withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.wb_sunny, color: Color(0xFFf5576c), size: 22),
+            child: const Icon(
+              Icons.wb_sunny,
+              color: Color(0xFFf5576c),
+              size: 22,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -690,10 +737,7 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15),
         ],
       ),
       child: Column(
@@ -701,7 +745,9 @@ class _TrendMatcherPageState extends State<TrendMatcherPage> with SingleTickerPr
           final index = entry.key;
           final suggestion = entry.value;
           return Padding(
-            padding: EdgeInsets.only(bottom: index < suggestions.length - 1 ? 12 : 0),
+            padding: EdgeInsets.only(
+              bottom: index < suggestions.length - 1 ? 12 : 0,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

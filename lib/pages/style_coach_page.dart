@@ -12,7 +12,8 @@ class StyleCoachPage extends StatefulWidget {
   State<StyleCoachPage> createState() => _StyleCoachPageState();
 }
 
-class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProviderStateMixin {
+class _StyleCoachPageState extends State<StyleCoachPage>
+    with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _recommendations;
   bool _isLoading = true;
   late AnimationController _pulseController;
@@ -90,16 +91,23 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                                 return Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2 + _pulseController.value * 0.1),
+                                    color: Colors.white.withOpacity(
+                                      0.2 + _pulseController.value * 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.white.withOpacity(0.2),
-                                        blurRadius: 15 + _pulseController.value * 10,
+                                        blurRadius:
+                                            15 + _pulseController.value * 10,
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(Icons.auto_awesome, color: Colors.white, size: 32),
+                                  child: const Icon(
+                                    Icons.auto_awesome,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
                                 );
                               },
                             ),
@@ -160,7 +168,9 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF667eea).withOpacity(0.1 + _pulseController.value * 0.1),
+                      const Color(
+                        0xFF667eea,
+                      ).withOpacity(0.1 + _pulseController.value * 0.1),
                       const Color(0xFF764ba2).withOpacity(0.05),
                     ],
                   ),
@@ -202,7 +212,8 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
   }
 
   Widget _buildContent() {
-    final outfitSuggestions = _recommendations!['outfitSuggestions'] as List? ?? [];
+    final outfitSuggestions =
+        _recommendations!['outfitSuggestions'] as List? ?? [];
     final missingItems = _recommendations!['missingItems'] as List? ?? [];
     final styleInsights = _recommendations!['styleInsights'] as List? ?? [];
     final colorAdvice = _recommendations!['colorAdvice'] as String? ?? '';
@@ -217,7 +228,9 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
           if (outfitSuggestions.isNotEmpty) ...[
             _buildSectionTitle('Outfit Suggestions', Icons.checkroom_rounded),
             const SizedBox(height: 12),
-            ...outfitSuggestions.map((outfit) => _buildOutfitCard(outfit as Map<String, dynamic>)),
+            ...outfitSuggestions.map(
+              (outfit) => _buildOutfitCard(outfit as Map<String, dynamic>),
+            ),
             const SizedBox(height: 24),
           ],
 
@@ -233,13 +246,20 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
           if (colorAdvice.isNotEmpty) ...[
             _buildSectionTitle('Color Palette Advice', Icons.palette_rounded),
             const SizedBox(height: 12),
-            _buildAdviceCard(colorAdvice, Icons.color_lens, const Color(0xFFE91E63)),
+            _buildAdviceCard(
+              colorAdvice,
+              Icons.color_lens,
+              const Color(0xFFE91E63),
+            ),
             const SizedBox(height: 24),
           ],
 
           // Missing Items
           if (missingItems.isNotEmpty) ...[
-            _buildSectionTitle('Recommended Additions', Icons.add_shopping_cart_rounded),
+            _buildSectionTitle(
+              'Recommended Additions',
+              Icons.add_shopping_cart_rounded,
+            ),
             const SizedBox(height: 12),
             _buildMissingItemsCard(missingItems.cast<String>()),
             const SizedBox(height: 24),
@@ -249,7 +269,11 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
           if (seasonalTips.isNotEmpty) ...[
             _buildSectionTitle('Seasonal Tips', Icons.wb_sunny_rounded),
             const SizedBox(height: 12),
-            _buildAdviceCard(seasonalTips, Icons.calendar_today, const Color(0xFF4CAF50)),
+            _buildAdviceCard(
+              seasonalTips,
+              Icons.calendar_today,
+              const Color(0xFF4CAF50),
+            ),
             const SizedBox(height: 24),
           ],
 
@@ -323,7 +347,11 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.style, color: Color(0xFF667eea), size: 22),
+                child: const Icon(
+                  Icons.style,
+                  color: Color(0xFF667eea),
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -341,10 +369,7 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                     if (occasion.isNotEmpty)
                       Text(
                         occasion,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[500],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
                       ),
                   ],
                 ),
@@ -355,29 +380,42 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: items.map((item) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF667eea).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF667eea).withOpacity(0.2)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.checkroom, size: 14, color: const Color(0xFF667eea).withOpacity(0.8)),
-                  const SizedBox(width: 6),
-                  Text(
-                    item,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF667eea),
+            children: items
+                .map(
+                  (item) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF667eea).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF667eea).withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.checkroom,
+                          size: 14,
+                          color: const Color(0xFF667eea).withOpacity(0.8),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          item,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF667eea),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            )).toList(),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -404,7 +442,9 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
           final index = entry.key;
           final insight = entry.value;
           return Padding(
-            padding: EdgeInsets.only(bottom: index < insights.length - 1 ? 12 : 0),
+            padding: EdgeInsets.only(
+              bottom: index < insights.length - 1 ? 12 : 0,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -454,10 +494,7 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15),
         ],
       ),
       child: Row(
@@ -494,10 +531,7 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15),
         ],
       ),
       child: Column(
@@ -514,16 +548,17 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                     color: const Color(0xFFFF9800).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.add, color: Color(0xFFFF9800), size: 16),
+                  child: const Icon(
+                    Icons.add,
+                    color: Color(0xFFFF9800),
+                    size: 16,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     item,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[800],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[800]),
                   ),
                 ),
               ],
@@ -567,7 +602,11 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                 color: Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 24),
+              child: const Icon(
+                Icons.bolt_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 16),
             const Expanded(
@@ -585,15 +624,16 @@ class _StyleCoachPageState extends State<StyleCoachPage> with SingleTickerProvid
                   SizedBox(height: 4),
                   Text(
                     'Get an instant outfit suggestion',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 18),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white70,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -611,9 +651,9 @@ class _QuickOutfitDialog extends StatefulWidget {
 class _QuickOutfitDialogState extends State<_QuickOutfitDialog> {
   Map<String, dynamic>? _outfit;
   bool _isLoading = true;
-  String _selectedOccasion = 'Günlük';
+  String _selectedOccasion = 'Casual';
 
-  final occasions = ['Günlük', 'İş', 'Parti', 'Spor', 'Randevu'];
+  final occasions = ['Casual', 'Work', 'Party', 'Sport', 'Date'];
 
   @override
   void initState() {
@@ -648,140 +688,161 @@ class _QuickOutfitDialogState extends State<_QuickOutfitDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                  child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Quick Outfit',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: GlamoraColors.deepNavy,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Occasion selector
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: occasions.map((occasion) {
+                    final isSelected = occasion == _selectedOccasion;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => _selectedOccasion = occasion);
+                          _loadOutfit();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: isSelected
+                                ? const LinearGradient(
+                                    colors: [
+                                      Color(0xFF667eea),
+                                      Color(0xFF764ba2),
+                                    ],
+                                  )
+                                : null,
+                            color: isSelected ? null : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            occasion,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey[700],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Quick Outfit',
-                  style: TextStyle(
-                    fontSize: 20,
+              ),
+              const SizedBox(height: 24),
+
+              // Content
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(color: Color(0xFF667eea)),
+                      SizedBox(height: 16),
+                      Text('AI is thinking...'),
+                    ],
+                  ),
+                )
+              else if (_outfit == null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      Icon(Icons.checkroom, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Add items to your wardrobe first',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                // Outfit name
+                Text(
+                  _outfit!['outfitName'] ?? 'Today\'s Outfit',
+                  style: const TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: GlamoraColors.deepNavy,
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-            // Occasion selector
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: occasions.map((occasion) {
-                  final isSelected = occasion == _selectedOccasion;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedOccasion = occasion);
-                        _loadOutfit();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          gradient: isSelected 
-                              ? const LinearGradient(colors: [Color(0xFF667eea), Color(0xFF764ba2)])
-                              : null,
-                          color: isSelected ? null : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(20),
+                // Items with images
+                ...((_outfit!['items'] as List?) ?? []).map<Widget>((item) {
+                  return _OutfitItemWithImage(itemName: item.toString());
+                }).toList(),
+                const SizedBox(height: 16),
+
+                // Reason
+                if ((_outfit!['reason'] ?? '').isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: Colors.grey[500],
                         ),
-                        child: Text(
-                          occasion,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey[700],
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _outfit!['reason'],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Content
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(color: Color(0xFF667eea)),
-                    SizedBox(height: 16),
-                    Text('AI is thinking...'),
-                  ],
-                ),
-              )
-            else if (_outfit == null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Column(
-                  children: [
-                    Icon(Icons.checkroom, size: 48, color: Colors.grey[400]),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Add items to your wardrobe first',
-                      style: TextStyle(color: Colors.grey[500]),
-                    ),
-                  ],
-                ),
-              )
-            else ...[
-              // Outfit name
-              Text(
-                _outfit!['outfitName'] ?? 'Today\'s Outfit',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: GlamoraColors.deepNavy,
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Items with images
-              ...((_outfit!['items'] as List?) ?? []).map<Widget>((item) {
-                return _OutfitItemWithImage(itemName: item.toString());
-              }).toList(),
-              const SizedBox(height: 16),
-              
-              // Reason
-              if ((_outfit!['reason'] ?? '').isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 18, color: Colors.grey[500]),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _outfit!['reason'],
-                          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+              ],
             ],
           ),
         ),
@@ -793,7 +854,7 @@ class _QuickOutfitDialogState extends State<_QuickOutfitDialog> {
 // Widget to display outfit item with image from wardrobe
 class _OutfitItemWithImage extends StatelessWidget {
   final String itemName;
-  
+
   const _OutfitItemWithImage({required this.itemName});
 
   @override
@@ -806,7 +867,7 @@ class _OutfitItemWithImage extends StatelessWidget {
     final colorMatch = RegExp(r'\(([^)]+)\)').firstMatch(itemName);
     final parsedCategory = categoryMatch?.group(1)?.toLowerCase() ?? '';
     final color = colorMatch?.group(1)?.toLowerCase() ?? '';
-    
+
     // Map parsed category to wardrobe categories
     String mappedCategory = parsedCategory;
     if (parsedCategory == 'tops') mappedCategory = 'tops';
@@ -824,42 +885,48 @@ class _OutfitItemWithImage extends StatelessWidget {
           .get(),
       builder: (context, snapshot) {
         String? imageUrl;
-        
+
         if (snapshot.hasData) {
           // Priority matching: Find items that match the CATEGORY first
           Map<String, dynamic>? bestMatch;
           int bestScore = 0;
-          
+
           for (final doc in snapshot.data!.docs) {
             final data = doc.data() as Map<String, dynamic>;
-            final itemCategory = (data['category'] ?? '').toString().toLowerCase();
-            final itemColor = (data['colorLabel'] ?? '').toString().toLowerCase();
+            final itemCategory = (data['category'] ?? '')
+                .toString()
+                .toLowerCase();
+            final itemColor = (data['colorLabel'] ?? '')
+                .toString()
+                .toLowerCase();
             final itemBrand = (data['brand'] ?? '').toString().toLowerCase();
-            
+
             // Skip if category doesn't match (category match is REQUIRED)
-            if (mappedCategory.isNotEmpty && !itemCategory.contains(mappedCategory)) {
+            if (mappedCategory.isNotEmpty &&
+                !itemCategory.contains(mappedCategory)) {
               continue;
             }
-            
+
             int score = 10; // Base score for category match
-            
+
             // Color match bonus
             if (color.isNotEmpty && itemColor == color) {
               score += 5;
             }
-            
+
             // Brand match bonus
-            if (itemBrand.isNotEmpty && itemName.toLowerCase().contains(itemBrand)) {
+            if (itemBrand.isNotEmpty &&
+                itemName.toLowerCase().contains(itemBrand)) {
               score += 3;
             }
-            
+
             // Update best match if this one is better
             if (score > bestScore) {
               bestScore = score;
               bestMatch = data;
             }
           }
-          
+
           if (bestMatch != null) {
             imageUrl = bestMatch['imageUrl'];
           }
@@ -907,12 +974,18 @@ class _OutfitItemWithImage extends StatelessWidget {
                           ),
                           errorWidget: (_, __, ___) => Container(
                             color: Colors.grey[100],
-                            child: const Icon(Icons.checkroom, color: Colors.grey),
+                            child: const Icon(
+                              Icons.checkroom,
+                              color: Colors.grey,
+                            ),
                           ),
                         )
                       : Container(
                           color: const Color(0xFF667eea).withOpacity(0.1),
-                          child: const Icon(Icons.checkroom, color: Color(0xFF667eea)),
+                          child: const Icon(
+                            Icons.checkroom,
+                            color: Color(0xFF667eea),
+                          ),
                         ),
                 ),
               ),

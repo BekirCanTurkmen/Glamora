@@ -25,13 +25,13 @@ class TrendMatcherService {
       final data = doc.data();
       final category = (data['category'] ?? 'Other').toString();
       final color = (data['colorLabel'] ?? 'Unknown').toString();
-      
+
       items.add({
         'category': category,
         'color': color,
         'brand': data['brand'] ?? '',
       });
-      
+
       colorCount[color] = (colorCount[color] ?? 0) + 1;
       categoryCount[category] = (categoryCount[category] ?? 0) + 1;
     }
@@ -47,12 +47,14 @@ class TrendMatcherService {
   /// AI'dan güncel trendleri ve gardırop eşleşmesini al
   static Future<Map<String, dynamic>> getTrendMatches() async {
     final wardrobeData = await _getWardrobeData();
-    
+
     if ((wardrobeData['totalItems'] as int) == 0) {
       return {
         'trends': [],
         'overallMatch': 0,
-        'suggestions': ['Gardırobunuza kıyafet ekleyerek trend analizi yapabilirsiniz.'],
+        'suggestions': [
+          'Gardırobunuza kıyafet ekleyerek trend analizi yapabilirsiniz.',
+        ],
       };
     }
 
@@ -60,7 +62,8 @@ class TrendMatcherService {
     final season = _getSeason(currentMonth);
     final year = DateTime.now().year;
 
-    final prompt = '''
+    final prompt =
+        '''
 Sen profesyonel bir moda trend analistisin. $year yılı $season sezonu için güncel moda trendlerini analiz et ve kullanıcının gardırobuyla eşleştir.
 
 KULLANICININ GARDIROBU:
@@ -97,7 +100,7 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
 
     try {
       final response = await AiService.askGemini(prompt);
-      
+
       if (response == null || response.isEmpty) {
         return _getDefaultTrends();
       }
@@ -107,24 +110,24 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
           .replaceAll('```json', '')
           .replaceAll('```', '')
           .trim();
-      
+
       final startIndex = cleanJson.indexOf('{');
       final endIndex = cleanJson.lastIndexOf('}');
-      
+
       if (startIndex == -1 || endIndex == -1) {
         return _getDefaultTrends();
       }
-      
+
       cleanJson = cleanJson.substring(startIndex, endIndex + 1);
-      
+
       final parsed = _parseJson(cleanJson);
-      
+
       // Eğer trends boş döndüyse, varsayılan trendleri kullan
       final trends = parsed['trends'] as List? ?? [];
       if (trends.isEmpty) {
         return _getDefaultTrends();
       }
-      
+
       return parsed;
     } catch (e) {
       print('Trend Matcher Error: $e');
@@ -150,22 +153,39 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
       };
 
       // trends parse
-      final trendsMatch = RegExp(r'"trends"\s*:\s*\[(.*?)\](?=\s*,\s*"[a-zA-Z]|\s*\})', dotAll: true).firstMatch(json);
+      final trendsMatch = RegExp(
+        r'"trends"\s*:\s*\[(.*?)\](?=\s*,\s*"[a-zA-Z]|\s*\})',
+        dotAll: true,
+      ).firstMatch(json);
       if (trendsMatch != null) {
         final trendsStr = trendsMatch.group(1) ?? '';
-        final trendMatches = RegExp(r'\{[^{}]*"name"[^{}]*(?:\{[^{}]*\}[^{}]*)*\}').allMatches(trendsStr);
-        
+        final trendMatches = RegExp(
+          r'\{[^{}]*"name"[^{}]*(?:\{[^{}]*\}[^{}]*)*\}',
+        ).allMatches(trendsStr);
+
         for (final match in trendMatches) {
           final trendStr = match.group(0) ?? '';
-          
-          final nameMatch = RegExp(r'"name"\s*:\s*"([^"]*)"').firstMatch(trendStr);
-          final descMatch = RegExp(r'"description"\s*:\s*"([^"]*)"').firstMatch(trendStr);
-          final percentMatch = RegExp(r'"matchPercentage"\s*:\s*(\d+)').firstMatch(trendStr);
-          final iconMatch = RegExp(r'"icon"\s*:\s*"([^"]*)"').firstMatch(trendStr);
-          final colorMatch = RegExp(r'"color"\s*:\s*"([^"]*)"').firstMatch(trendStr);
-          
+
+          final nameMatch = RegExp(
+            r'"name"\s*:\s*"([^"]*)"',
+          ).firstMatch(trendStr);
+          final descMatch = RegExp(
+            r'"description"\s*:\s*"([^"]*)"',
+          ).firstMatch(trendStr);
+          final percentMatch = RegExp(
+            r'"matchPercentage"\s*:\s*(\d+)',
+          ).firstMatch(trendStr);
+          final iconMatch = RegExp(
+            r'"icon"\s*:\s*"([^"]*)"',
+          ).firstMatch(trendStr);
+          final colorMatch = RegExp(
+            r'"color"\s*:\s*"([^"]*)"',
+          ).firstMatch(trendStr);
+
           final matchingItems = <String>[];
-          final matchingMatch = RegExp(r'"matchingItems"\s*:\s*\[(.*?)\]').firstMatch(trendStr);
+          final matchingMatch = RegExp(
+            r'"matchingItems"\s*:\s*\[(.*?)\]',
+          ).firstMatch(trendStr);
           if (matchingMatch != null) {
             final itemsStr = matchingMatch.group(1) ?? '';
             final itemMatches = RegExp(r'"([^"]*)"').allMatches(itemsStr);
@@ -173,9 +193,11 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
               matchingItems.add(item.group(1) ?? '');
             }
           }
-          
+
           final missingItems = <String>[];
-          final missingMatch = RegExp(r'"missingItems"\s*:\s*\[(.*?)\]').firstMatch(trendStr);
+          final missingMatch = RegExp(
+            r'"missingItems"\s*:\s*\[(.*?)\]',
+          ).firstMatch(trendStr);
           if (missingMatch != null) {
             final itemsStr = missingMatch.group(1) ?? '';
             final itemMatches = RegExp(r'"([^"]*)"').allMatches(itemsStr);
@@ -183,12 +205,13 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
               missingItems.add(item.group(1) ?? '');
             }
           }
-          
+
           if (nameMatch != null) {
             (result['trends'] as List).add({
               'name': nameMatch.group(1) ?? '',
               'description': descMatch?.group(1) ?? '',
-              'matchPercentage': int.tryParse(percentMatch?.group(1) ?? '0') ?? 0,
+              'matchPercentage':
+                  int.tryParse(percentMatch?.group(1) ?? '0') ?? 0,
               'matchingItems': matchingItems,
               'missingItems': missingItems,
               'icon': iconMatch?.group(1) ?? 'checkroom',
@@ -199,19 +222,27 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
       }
 
       // overallMatch parse
-      final overallMatch = RegExp(r'"overallMatch"\s*:\s*(\d+)').firstMatch(json);
+      final overallMatch = RegExp(
+        r'"overallMatch"\s*:\s*(\d+)',
+      ).firstMatch(json);
       if (overallMatch != null) {
-        result['overallMatch'] = int.tryParse(overallMatch.group(1) ?? '0') ?? 0;
+        result['overallMatch'] =
+            int.tryParse(overallMatch.group(1) ?? '0') ?? 0;
       }
 
       // topMatchingTrend parse
-      final topMatch = RegExp(r'"topMatchingTrend"\s*:\s*"([^"]*)"').firstMatch(json);
+      final topMatch = RegExp(
+        r'"topMatchingTrend"\s*:\s*"([^"]*)"',
+      ).firstMatch(json);
       if (topMatch != null) {
         result['topMatchingTrend'] = topMatch.group(1) ?? '';
       }
 
       // suggestions parse
-      final suggestionsMatch = RegExp(r'"suggestions"\s*:\s*\[(.*?)\]', dotAll: true).firstMatch(json);
+      final suggestionsMatch = RegExp(
+        r'"suggestions"\s*:\s*\[(.*?)\]',
+        dotAll: true,
+      ).firstMatch(json);
       if (suggestionsMatch != null) {
         final suggestionsStr = suggestionsMatch.group(1) ?? '';
         final itemMatches = RegExp(r'"([^"]*)"').allMatches(suggestionsStr);
@@ -221,7 +252,9 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
       }
 
       // seasonalTip parse
-      final seasonalMatch = RegExp(r'"seasonalTip"\s*:\s*"([^"]*)"').firstMatch(json);
+      final seasonalMatch = RegExp(
+        r'"seasonalTip"\s*:\s*"([^"]*)"',
+      ).firstMatch(json);
       if (seasonalMatch != null) {
         result['seasonalTip'] = seasonalMatch.group(1) ?? '';
       }
@@ -237,28 +270,28 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
       'trends': [
         {
           'name': 'Minimalist Chic',
-          'description': 'Sade ve zarif parçalarla oluşturulan minimal tarz',
+          'description': 'A minimal style built with simple, refined pieces',
           'matchPercentage': 60,
-          'matchingItems': ['Düz renk tişört', 'Klasik jean'],
-          'missingItems': ['Beyaz sneaker', 'Oversize blazer'],
+          'matchingItems': ['Solid-color T-Shirt', 'Classic jeans'],
+          'missingItems': ['White sneakers', 'Oversized blazer'],
           'icon': 'style',
           'color': '#667eea',
         },
         {
           'name': 'Layered Look',
-          'description': 'Katmanlı giyim trendi',
+          'description': 'Layered dressing trend',
           'matchPercentage': 45,
-          'matchingItems': ['Tişört', 'Gömlek'],
-          'missingItems': ['İnce hırka', 'Yelek'],
+          'matchingItems': ['T-Shirt', 'Shirt'],
+          'missingItems': ['Light cardigan', 'Vest'],
           'icon': 'layers',
           'color': '#764ba2',
         },
         {
           'name': 'Earth Tones',
-          'description': 'Toprak tonları ve doğal renkler',
+          'description': 'Earth tones and natural colors',
           'matchPercentage': 50,
-          'matchingItems': ['Kahverengi parçalar'],
-          'missingItems': ['Bej pantolon', 'Haki ceket'],
+          'matchingItems': ['Brown pieces'],
+          'missingItems': ['Beige trousers', 'Khaki jacket'],
           'icon': 'eco',
           'color': '#8D6E63',
         },
@@ -266,10 +299,10 @@ Lütfen aşağıdaki JSON formatında yanıt ver (Türkçe):
       'overallMatch': 52,
       'topMatchingTrend': 'Minimalist Chic',
       'suggestions': [
-        'Gardırobunuza nötr renkler ekleyin',
-        'Katmanlı giyim için ince üst parçalar edinin',
+        'Add neutral colors to your wardrobe',
+        'Get lightweight tops for layering',
       ],
-      'seasonalTip': 'Bu sezon toprak tonları ve minimal tasarımlar öne çıkıyor.',
+      'seasonalTip': 'This season highlights earth tones and minimal designs.',
     };
   }
 }

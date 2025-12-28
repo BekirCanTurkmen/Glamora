@@ -30,9 +30,9 @@ class StyleCoachService {
       final category = data['category'] ?? 'Other';
       final color = data['colorLabel'] ?? 'Unknown';
       final brand = data['brand'] ?? '';
-      
+
       items.add('- $category ($color)${brand.isNotEmpty ? " - $brand" : ""}');
-      
+
       colorCount[color] = (colorCount[color] ?? 0) + 1;
       categoryCount[category] = (categoryCount[category] ?? 0) + 1;
     }
@@ -61,18 +61,23 @@ ${items.length > 30 ? '... ve ${items.length - 30} parça daha' : ''}
   /// AI'dan kişiselleştirilmiş stil önerileri al
   static Future<Map<String, dynamic>> getStyleRecommendations() async {
     final wardrobeContext = await _getWardrobeContext();
-    
+
     if (wardrobeContext.contains('henüz hiç kıyafet yok')) {
       return {
         'outfitSuggestions': [],
-        'missingItems': ['Temel parçalar ekleyerek başlayın: beyaz tişört, mavi jean, siyah pantolon'],
-        'styleInsights': ['Gardırobunuza kıyafet ekleyerek AI önerilerinden faydalanın!'],
+        'missingItems': [
+          'Temel parçalar ekleyerek başlayın: beyaz tişört, mavi jean, siyah pantolon',
+        ],
+        'styleInsights': [
+          'Gardırobunuza kıyafet ekleyerek AI önerilerinden faydalanın!',
+        ],
         'colorAdvice': 'Nötr renklerle (beyaz, siyah, gri, lacivert) başlayın.',
         'seasonalTips': 'Her mevsim için temel parçalar edinin.',
       };
     }
 
-    final prompt = '''
+    final prompt =
+        '''
 Sen profesyonel bir stil danışmanısın. Aşağıdaki gardırop bilgilerine göre kişiselleştirilmiş öneriler ver.
 
 $wardrobeContext
@@ -98,7 +103,7 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
 
     try {
       final response = await AiService.askGemini(prompt);
-      
+
       if (response == null || response.isEmpty) {
         return _getDefaultRecommendations();
       }
@@ -108,17 +113,17 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
           .replaceAll('```json', '')
           .replaceAll('```', '')
           .trim();
-      
+
       // JSON başlangıcını bul
       final startIndex = cleanJson.indexOf('{');
       final endIndex = cleanJson.lastIndexOf('}');
-      
+
       if (startIndex == -1 || endIndex == -1) {
         return _getDefaultRecommendations();
       }
-      
+
       cleanJson = cleanJson.substring(startIndex, endIndex + 1);
-      
+
       final parsed = _parseJson(cleanJson);
       return parsed;
     } catch (e) {
@@ -139,16 +144,27 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
       };
 
       // outfitSuggestions parse
-      final suggestionsMatch = RegExp(r'"outfitSuggestions"\s*:\s*\[(.*?)\]', dotAll: true).firstMatch(json);
+      final suggestionsMatch = RegExp(
+        r'"outfitSuggestions"\s*:\s*\[(.*?)\]',
+        dotAll: true,
+      ).firstMatch(json);
       if (suggestionsMatch != null) {
         final suggestionsStr = suggestionsMatch.group(1) ?? '';
-        final outfitMatches = RegExp(r'\{[^{}]*"name"[^{}]*\}').allMatches(suggestionsStr);
+        final outfitMatches = RegExp(
+          r'\{[^{}]*"name"[^{}]*\}',
+        ).allMatches(suggestionsStr);
         for (final match in outfitMatches) {
           final outfit = match.group(0) ?? '';
-          final nameMatch = RegExp(r'"name"\s*:\s*"([^"]*)"').firstMatch(outfit);
-          final occasionMatch = RegExp(r'"occasion"\s*:\s*"([^"]*)"').firstMatch(outfit);
-          final itemsMatch = RegExp(r'"items"\s*:\s*\[(.*?)\]').firstMatch(outfit);
-          
+          final nameMatch = RegExp(
+            r'"name"\s*:\s*"([^"]*)"',
+          ).firstMatch(outfit);
+          final occasionMatch = RegExp(
+            r'"occasion"\s*:\s*"([^"]*)"',
+          ).firstMatch(outfit);
+          final itemsMatch = RegExp(
+            r'"items"\s*:\s*\[(.*?)\]',
+          ).firstMatch(outfit);
+
           if (nameMatch != null) {
             final items = <String>[];
             if (itemsMatch != null) {
@@ -158,7 +174,7 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
                 items.add(item.group(1) ?? '');
               }
             }
-            
+
             (result['outfitSuggestions'] as List).add({
               'name': nameMatch.group(1) ?? '',
               'items': items,
@@ -169,7 +185,10 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
       }
 
       // missingItems parse
-      final missingMatch = RegExp(r'"missingItems"\s*:\s*\[(.*?)\]', dotAll: true).firstMatch(json);
+      final missingMatch = RegExp(
+        r'"missingItems"\s*:\s*\[(.*?)\]',
+        dotAll: true,
+      ).firstMatch(json);
       if (missingMatch != null) {
         final missingStr = missingMatch.group(1) ?? '';
         final itemMatches = RegExp(r'"([^"]*)"').allMatches(missingStr);
@@ -179,7 +198,10 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
       }
 
       // styleInsights parse
-      final insightsMatch = RegExp(r'"styleInsights"\s*:\s*\[(.*?)\]', dotAll: true).firstMatch(json);
+      final insightsMatch = RegExp(
+        r'"styleInsights"\s*:\s*\[(.*?)\]',
+        dotAll: true,
+      ).firstMatch(json);
       if (insightsMatch != null) {
         final insightsStr = insightsMatch.group(1) ?? '';
         final itemMatches = RegExp(r'"([^"]*)"').allMatches(insightsStr);
@@ -189,13 +211,17 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
       }
 
       // colorAdvice parse
-      final colorMatch = RegExp(r'"colorAdvice"\s*:\s*"([^"]*)"').firstMatch(json);
+      final colorMatch = RegExp(
+        r'"colorAdvice"\s*:\s*"([^"]*)"',
+      ).firstMatch(json);
       if (colorMatch != null) {
         result['colorAdvice'] = colorMatch.group(1) ?? '';
       }
 
       // seasonalTips parse
-      final seasonMatch = RegExp(r'"seasonalTips"\s*:\s*"([^"]*)"').firstMatch(json);
+      final seasonMatch = RegExp(
+        r'"seasonalTips"\s*:\s*"([^"]*)"',
+      ).firstMatch(json);
       if (seasonMatch != null) {
         result['seasonalTips'] = seasonMatch.group(1) ?? '';
       }
@@ -210,20 +236,27 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
     return {
       'outfitSuggestions': [
         {
-          'name': 'Günlük Şık',
-          'items': ['Tişört', 'Jean', 'Sneaker'],
-          'occasion': 'Günlük kullanım',
+          'name': 'Casual Chic',
+          'items': ['T-Shirt', 'Jeans', 'Sneakers'],
+          'occasion': 'Everyday wear',
         },
         {
-          'name': 'İş Casual',
-          'items': ['Gömlek', 'Pantolon', 'Loafer'],
-          'occasion': 'Ofis ortamı',
+          'name': 'Business Casual',
+          'items': ['Shirt', 'Trousers', 'Loafers'],
+          'occasion': 'Office setting',
         },
       ],
-      'missingItems': ['Çok yönlü bir ceket', 'Klasik beyaz sneaker', 'Şık bir saat'],
-      'styleInsights': ['Gardırobunuz analiz ediliyor...', 'Daha fazla veri için kıyafet ekleyin'],
-      'colorAdvice': 'Gardırobunuzdaki renkleri analiz etmek için daha fazla parça ekleyin.',
-      'seasonalTips': 'Her mevsim için uygun parçalarınızı değerlendiriyoruz.',
+      'missingItems': [
+        'Versatile jacket',
+        'Classic white sneakers',
+        'Elegant watch',
+      ],
+      'styleInsights': [
+        'Your wardrobe is being analyzed...',
+        'Add more items for better insights',
+      ],
+      'colorAdvice': 'Add more pieces to analyze your wardrobe colors.',
+      'seasonalTips': 'We are evaluating your pieces for each season.',
     };
   }
 
@@ -233,7 +266,7 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
     String? weather,
   }) async {
     final wardrobeContext = await _getWardrobeContext();
-    
+
     if (wardrobeContext.contains('henüz hiç kıyafet yok')) {
       return null;
     }
@@ -241,7 +274,8 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
     final occasionText = occasion ?? 'günlük kullanım';
     final weatherText = weather ?? 'normal hava';
 
-    final prompt = '''
+    final prompt =
+        '''
 Sen profesyonel bir moda stilistisin. Aşağıdaki gardırop envanterini kullanarak "$occasionText" durumu ve "$weatherText" hava koşulu için en şık ve uyumlu BİREYSEL bir kombin oluştur.
 
 GARDIROP ENVANTERİ:
@@ -266,17 +300,26 @@ YANIT FORMATI (SADECE JSON):
       final response = await AiService.askGemini(prompt);
       if (response == null) return null;
 
-      String cleanJson = response.replaceAll('```json', '').replaceAll('```', '').trim();
+      String cleanJson = response
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
       final startIndex = cleanJson.indexOf('{');
       final endIndex = cleanJson.lastIndexOf('}');
-      
+
       if (startIndex == -1 || endIndex == -1) return null;
-      
+
       cleanJson = cleanJson.substring(startIndex, endIndex + 1);
 
-      final nameMatch = RegExp(r'"outfitName"\s*:\s*"([^"]*)"').firstMatch(cleanJson);
-      final reasonMatch = RegExp(r'"reason"\s*:\s*"([^"]*)"').firstMatch(cleanJson);
-      final itemsMatch = RegExp(r'"items"\s*:\s*\[(.*?)\]').firstMatch(cleanJson);
+      final nameMatch = RegExp(
+        r'"outfitName"\s*:\s*"([^"]*)"',
+      ).firstMatch(cleanJson);
+      final reasonMatch = RegExp(
+        r'"reason"\s*:\s*"([^"]*)"',
+      ).firstMatch(cleanJson);
+      final itemsMatch = RegExp(
+        r'"items"\s*:\s*\[(.*?)\]',
+      ).firstMatch(cleanJson);
 
       final items = <String>[];
       if (itemsMatch != null) {
