@@ -70,10 +70,10 @@ class _ChatListPageState extends State<ChatListPage>
     final userDoc =
     await _firestore.collection('glamora_users').doc(fromUid).get();
     final data = userDoc.data() ?? {};
-    final username = data['username'] ?? 'bir kullanıcı';
+    final username = data['username'] ?? 'a user';
 
     setState(() {
-      _toastMessage = "$username sana arkadaşlık isteği gönderdi 💌";
+      _toastMessage = "$username sent you a friend request 💌";
       _showToast = true;
     });
 
@@ -101,7 +101,7 @@ class _ChatListPageState extends State<ChatListPage>
       appBar: AppBar(
         backgroundColor: GlamoraColors.deepNavy,
         title: const Text(
-          "Mesajlar",
+          "Messages",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -111,7 +111,7 @@ class _ChatListPageState extends State<ChatListPage>
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            tooltip: 'Arkadaş Ekle',
+            tooltip: 'Add Friend',
             icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
             onPressed: () {
               Navigator.push(
@@ -140,7 +140,7 @@ class _ChatListPageState extends State<ChatListPage>
                   onChanged: (val) =>
                       setState(() => _searchQuery = val.toLowerCase()),
                   decoration: InputDecoration(
-                    hintText: "Kullanıcı adı ara...",
+                    hintText: "Search username...",
                     hintStyle: const TextStyle(
                       color: GlamoraColors.deepNavy,
                       fontWeight: FontWeight.w400,
@@ -197,7 +197,7 @@ class _ChatListPageState extends State<ChatListPage>
                     if (users.isEmpty) {
                       return const Center(
                         child: Text(
-                          "Henüz mesajlaşabileceğin bir kullanıcı yok.\nSağ üstten arkadaş ekleyebilirsin 💬",
+                          "No users available to message yet.\nYou can add friends from the top right 💬",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: GlamoraColors.deepNavy,

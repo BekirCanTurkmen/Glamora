@@ -300,6 +300,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   child: TextField(
                     controller: _commentController,
                     focusNode: _commentFocus,
+                    style: const TextStyle(color: GlamoraColors.deepNavy),
                     decoration: InputDecoration(
                       hintText: 'Add a comment...',
                       hintStyle: TextStyle(color: Colors.grey[400]),

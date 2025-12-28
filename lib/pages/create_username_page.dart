@@ -19,7 +19,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
 
     if (username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen bir kullanıcı adı girin.")),
+        const SnackBar(content: Text("Please enter a username.")),
       );
       return;
     }
@@ -36,7 +36,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
 
     if (existing.docs.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bu kullanıcı adı zaten alınmış.")),
+        const SnackBar(content: Text("This username is already taken.")),
       );
       setState(() => _loading = false);
       return;
@@ -49,7 +49,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
     }, SetOptions(merge: true));
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Kullanıcı adınız kaydedildi ✅")),
+      const SnackBar(content: Text("Your username has been saved ✅")),
     );
 
     setState(() => _loading = false);
@@ -64,7 +64,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
         backgroundColor: GlamoraColors.deepNavy,
         centerTitle: true,
         title: const Text(
-          "Kullanıcı Adı Oluştur",
+          "Create Username",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -90,7 +90,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
             const SizedBox(height: 30),
 
             const Text(
-              "Mesajlaşma özelliğini kullanmak için\nbenzersiz bir kullanıcı adı oluşturun.",
+              "Create a unique username\nto use the messaging feature.",
               style: TextStyle(
                 fontSize: 16,
                 color: GlamoraColors.deepNavy,
@@ -112,7 +112,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(
-                hintText: "örnek: glamora_mer",
+                hintText: "e.g.: glamora_mer",
                 hintStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: GlamoraColors.softWhite,
@@ -153,7 +153,7 @@ class _CreateUsernamePageState extends State<CreateUsernamePage> {
                 child: _loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                  "Kaydet",
+                  "Save",
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white,

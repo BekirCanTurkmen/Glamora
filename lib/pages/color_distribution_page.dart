@@ -71,23 +71,23 @@ class _ColorDistributionPageState extends State<ColorDistributionPage> {
     final v = hsv.value;         // 0..1
 
     // Açık/Koyu/Nötr kontrolleri
-    if (v > 0.92 && s < 0.15) return 'Beyaz';
-    if (v < 0.18) return 'Siyah';
-    if (s < 0.15) return 'Gri';
+    if (v > 0.92 && s < 0.15) return 'White';
+    if (v < 0.18) return 'Black';
+    if (s < 0.15) return 'Grey';
 
     // Ton aralıkları (yaklaşık)
-    if (h >= 0 && h < 15) return 'Kırmızı';
-    if (h >= 15 && h < 35) return 'Turuncu';
-    if (h >= 35 && h < 55) return 'Sarı';
-    if (h >= 55 && h < 85) return 'Sarı-Yeşil';
-    if (h >= 85 && h < 160) return 'Yeşil';
-    if (h >= 160 && h < 200) return 'Camgöbeği';
-    if (h >= 200 && h < 250) return 'Mavi';
-    if (h >= 250 && h < 290) return 'Mor';
-    if (h >= 290 && h < 330) return 'Pembe';
-    if (h >= 330 && h <= 360) return 'Kırmızı';
+    if (h >= 0 && h < 15) return 'Red';
+    if (h >= 15 && h < 35) return 'Orange';
+    if (h >= 35 && h < 55) return 'Yellow';
+    if (h >= 55 && h < 85) return 'Yellow-Green';
+    if (h >= 85 && h < 160) return 'Green';
+    if (h >= 160 && h < 200) return 'Cyan';
+    if (h >= 200 && h < 250) return 'Blue';
+    if (h >= 250 && h < 290) return 'Purple';
+    if (h >= 290 && h < 330) return 'Pink';
+    if (h >= 330 && h <= 360) return 'Red';
 
-    return 'Diğer';
+    return 'Other';
   }
 
   @override
@@ -96,13 +96,13 @@ class _ColorDistributionPageState extends State<ColorDistributionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Renk Dağılımı'),
+        title: const Text('Color Distribution'),
         centerTitle: true,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : total == 0
-              ? const Center(child: Text('Henüz analiz edilecek görsel yok.'))
+              ? const Center(child: Text('No images to analyze yet.'))
               : Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -168,7 +168,7 @@ class _ColorDistributionPageState extends State<ColorDistributionPage> {
                                   ),
                                 ),
                                 Text(
-                                  '${count} adet  •  ${pct.toStringAsFixed(1)}%',
+                                  '${count} items  •  ${pct.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     color:
                                         Theme.of(context).colorScheme.outline,

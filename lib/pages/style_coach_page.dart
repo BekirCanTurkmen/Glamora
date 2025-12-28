@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/glamora_theme.dart';
 import '../services/style_coach_service.dart';
 
@@ -637,11 +639,15 @@ class _QuickOutfitDialogState extends State<_QuickOutfitDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Header
             Row(
               children: [
@@ -748,40 +754,10 @@ class _QuickOutfitDialogState extends State<_QuickOutfitDialog> {
               ),
               const SizedBox(height: 16),
               
-              // Items
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: ((_outfit!['items'] as List?) ?? []).map<Widget>((item) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF667eea).withOpacity(0.12),
-                          const Color(0xFF764ba2).withOpacity(0.08),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.checkroom, size: 16, color: Color(0xFF667eea)),
-                        const SizedBox(width: 6),
-                        Text(
-                          item.toString(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF667eea),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+              // Items with images
+              ...((_outfit!['items'] as List?) ?? []).map<Widget>((item) {
+                return _OutfitItemWithImage(itemName: item.toString());
+              }).toList(),
               const SizedBox(height: 16),
               
               // Reason
@@ -806,8 +782,187 @@ class _QuickOutfitDialogState extends State<_QuickOutfitDialog> {
                   ),
                 ),
             ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget to display outfit item with image from wardrobe
+class _OutfitItemWithImage extends StatelessWidget {
+  final String itemName;
+  
+  const _OutfitItemWithImage({required this.itemName});
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return _buildSimpleChip();
+
+    // Parse item name to extract category and color (e.g., "Bottoms (White) - Mango")
+    final categoryMatch = RegExp(r'^(\w+)').firstMatch(itemName);
+    final colorMatch = RegExp(r'\(([^)]+)\)').firstMatch(itemName);
+    final parsedCategory = categoryMatch?.group(1)?.toLowerCase() ?? '';
+    final color = colorMatch?.group(1)?.toLowerCase() ?? '';
+    
+    // Map parsed category to wardrobe categories
+    String mappedCategory = parsedCategory;
+    if (parsedCategory == 'tops') mappedCategory = 'tops';
+    if (parsedCategory == 'bottoms') mappedCategory = 'bottoms';
+    if (parsedCategory == 'shoes') mappedCategory = 'shoes';
+    if (parsedCategory == 'outerwear') mappedCategory = 'outerwear';
+    if (parsedCategory == 'accessories') mappedCategory = 'accessories';
+    if (parsedCategory == 'dresses') mappedCategory = 'dresses';
+
+    return FutureBuilder<QuerySnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('glamora_users')
+          .doc(uid)
+          .collection('wardrobe')
+          .get(),
+      builder: (context, snapshot) {
+        String? imageUrl;
+        
+        if (snapshot.hasData) {
+          // Priority matching: Find items that match the CATEGORY first
+          Map<String, dynamic>? bestMatch;
+          int bestScore = 0;
+          
+          for (final doc in snapshot.data!.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final itemCategory = (data['category'] ?? '').toString().toLowerCase();
+            final itemColor = (data['colorLabel'] ?? '').toString().toLowerCase();
+            final itemBrand = (data['brand'] ?? '').toString().toLowerCase();
+            
+            // Skip if category doesn't match (category match is REQUIRED)
+            if (mappedCategory.isNotEmpty && !itemCategory.contains(mappedCategory)) {
+              continue;
+            }
+            
+            int score = 10; // Base score for category match
+            
+            // Color match bonus
+            if (color.isNotEmpty && itemColor == color) {
+              score += 5;
+            }
+            
+            // Brand match bonus
+            if (itemBrand.isNotEmpty && itemName.toLowerCase().contains(itemBrand)) {
+              score += 3;
+            }
+            
+            // Update best match if this one is better
+            if (score > bestScore) {
+              bestScore = score;
+              bestMatch = data;
+            }
+          }
+          
+          if (bestMatch != null) {
+            imageUrl = bestMatch['imageUrl'];
+          }
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF667eea).withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: imageUrl != null && imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF667eea),
+                                ),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (_, __, ___) => Container(
+                            color: Colors.grey[100],
+                            child: const Icon(Icons.checkroom, color: Colors.grey),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFF667eea).withOpacity(0.1),
+                          child: const Icon(Icons.checkroom, color: Color(0xFF667eea)),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text
+              Expanded(
+                child: Text(
+                  itemName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: GlamoraColors.deepNavy,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSimpleChip() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF667eea).withOpacity(0.12),
+            const Color(0xFF764ba2).withOpacity(0.08),
           ],
         ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.checkroom, size: 16, color: Color(0xFF667eea)),
+          const SizedBox(width: 6),
+          Text(
+            itemName,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF667eea),
+            ),
+          ),
+        ],
       ),
     );
   }

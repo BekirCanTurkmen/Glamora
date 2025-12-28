@@ -29,7 +29,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
         .get();
 
     if (userQuery.docs.isEmpty) {
-      _showSnackBar("Kullanıcı bulunamadı ❌", isError: true);
+      _showSnackBar("User not found ❌", isError: true);
       setState(() => _loading = false);
       return;
     }
@@ -38,7 +38,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
     final targetUid = targetUser.id;
 
     if (targetUid == currentUser.uid) {
-      _showSnackBar("Kendine istek gönderemezsin 🙃", isError: true);
+      _showSnackBar("You can't send a request to yourself 🙃", isError: true);
       setState(() => _loading = false);
       return;
     }
@@ -63,7 +63,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    _showSnackBar("Arkadaşlık isteği gönderildi ✅");
+    _showSnackBar("Friend request sent ✅");
     _controller.clear();
     setState(() => _loading = false);
   }
@@ -92,7 +92,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         title: const Text(
-          "Arkadaş Ekle",
+          "Add Friend",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -106,7 +106,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const Text(
-              "Arkadaşının kullanıcı adını gir:",
+              "Enter your friend's username:",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -123,7 +123,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                 fontWeight: FontWeight.w500,
               ),
               decoration: InputDecoration(
-                hintText: "örnek: glamora_mer",
+                hintText: "e.g.: glamora_mer",
                 hintStyle: const TextStyle(
                   color: GlamoraColors.deepNavy,
                   fontWeight: FontWeight.w400,
@@ -172,7 +172,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                   CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 )
                     : const Text(
-                  "İstek Gönder",
+                  "Send Request",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

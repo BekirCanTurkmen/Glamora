@@ -121,11 +121,11 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
         hasChanges = true; // 🔥 Değişiklik algılandı
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Parça değiştirildi!"), duration: Duration(milliseconds: 600)),
+          const SnackBar(content: Text("Item swapped!"), duration: Duration(milliseconds: 600)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Alternatif öneri yok.")),
+          const SnackBar(content: Text("No alternative available.")),
         );
       }
     });
@@ -155,7 +155,7 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
             
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Kombin Güncellendi!"), backgroundColor: Colors.blueAccent),
+            const SnackBar(content: Text("✅ Outfit Updated!"), backgroundColor: Colors.blueAccent),
           );
         }
       } else {
@@ -168,7 +168,7 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Takvime Kaydedildi!"), backgroundColor: Colors.green),
+            const SnackBar(content: Text("✅ Saved to Calendar!"), backgroundColor: Colors.green),
           );
         }
       }
@@ -176,14 +176,14 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
       if (mounted) Navigator.pop(context); 
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Hata: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (isLoading || outfitData.isEmpty) {
-      return const Scaffold(body: Center(child: Text("Veri işlenemedi.")));
+      return const Scaffold(body: Center(child: Text("Unable to process data.")));
     }
 
     final items = outfitData['items'] as List;
@@ -234,7 +234,7 @@ class _OutfitResultPageState extends State<OutfitResultPage> {
               child: Column(
                 children: [
                   Text(
-                    outfitData['outfit_summary'] ?? "Günlük Kombin",
+                    outfitData['outfit_summary'] ?? "Daily Outfit",
                     style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),

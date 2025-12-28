@@ -192,8 +192,10 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
                   TextField(
                     controller: controller,
                     onChanged: (_) => setStateX(() {}),
+                    style: const TextStyle(color: GlamoraColors.deepNavy),
                     decoration: const InputDecoration(
                       hintText: "Search...",
+                      hintStyle: TextStyle(color: Colors.grey),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -202,7 +204,7 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
                     child: ListView(
                       children: [
                         ...filtered.map((b) => ListTile(
-                          title: Text(b),
+                          title: Text(b, style: const TextStyle(color: GlamoraColors.deepNavy)),
                           onTap: () => Navigator.pop(context, b),
                         )),
                       ],
@@ -219,6 +221,16 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
         });
 
     if (result != null) updateField("brand", result);
+  }
+
+  // ------------ COLOR SELECTOR ------------
+  Future<void> editColor() async {
+    final colorOptions = [
+      "White", "Black", "Grey", "Red", "Orange", "Yellow",
+      "Green", "Blue", "Purple", "Pink", "Brown", "Beige", "Navy", "Other"
+    ];
+    final result = await selectFromList("Select Color", colorOptions);
+    if (result != null) updateField("colorLabel", result);
   }
 
   // ------------ SEASON (AI SUGGESTION) ------------
@@ -417,7 +429,7 @@ class _ClothingDetailPageState extends State<ClothingDetailPage> {
                   customRow("Category", item["category"], editCategory),
                   customRow("Brand", item["brand"], editBrand),
                   customRow("Size", item["size"], editSize),
-                  customRow("Color", item["colorLabel"], () {}),
+                  customRow("Color", item["colorLabel"], editColor),
                   customRow("Price", item["price"], editPrice),
                   customRow("Season", item["season"], editSeason),
                   customRow("State", item["state"], editState),

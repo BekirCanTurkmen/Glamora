@@ -19,7 +19,7 @@ class _AiChatPageState extends State<AiChatPage> {
   final ScrollController _scrollController = ScrollController();
   
   final List<Map<String, String>> _messages = [
-    {"sender": "ai", "text": "Selam! Ben Glamora Stilist. Dolabındaki kıyafetleri biliyorum. Bugün ne giymek istersin?"}
+    {"sender": "ai", "text": "Hello! I'm Glamora Stylist. I know what's in your wardrobe. What would you like to wear today?"}
   ];
   
   bool _isLoading = false;
@@ -42,14 +42,14 @@ class _AiChatPageState extends State<AiChatPage> {
       _isLoading = true;
       // İstersen promptu ekranda gösterebilirsin ama çok uzun olduğu için gizli tutmak daha şık olabilir.
       // Şimdilik kullanıcı sormuş gibi gösterelim:
-      _messages.add({"sender": "user", "text": "Bana bugünkü verilerime göre bir kombin öner."}); 
+      _messages.add({"sender": "user", "text": "Suggest me an outfit based on today's data."}); 
     });
     _scrollToBottom();
 
     final response = await AiService.askGemini(prompt);
 
     setState(() {
-      _messages.add({"sender": "ai", "text": response ?? "Bir hata oluştu."});
+      _messages.add({"sender": "ai", "text": response ?? "An error occurred."});
       _isLoading = false;
     });
     _scrollToBottom();
@@ -58,7 +58,7 @@ class _AiChatPageState extends State<AiChatPage> {
   /// 👗 Dolap verisi çekme (Normal sohbet için)
   Future<String> _getWardrobeContext() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return "Kullanıcı bilgisi bulunamadı.";
+    if (uid == null) return "User information not found.";
 
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -67,16 +67,16 @@ class _AiChatPageState extends State<AiChatPage> {
           .collection('wardrobe')
           .get();
 
-      if (snapshot.docs.isEmpty) return "Dolabım şu an boş.";
+      if (snapshot.docs.isEmpty) return "My wardrobe is currently empty.";
 
       List<String> items = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        items.add("- ${data['category'] ?? 'Eşya'} (${data['colorLabel'] ?? '?'})");
+        items.add("- ${data['category'] ?? 'Item'} (${data['colorLabel'] ?? '?'})");
       }
       return items.join("\n");
     } catch (e) {
-      return "Dolap verisi alınamadı.";
+      return "Unable to retrieve wardrobe data.";
     }
   }
 
@@ -104,7 +104,7 @@ class _AiChatPageState extends State<AiChatPage> {
     final response = await AiService.askGemini(fullPrompt);
 
     setState(() {
-      _messages.add({"sender": "ai", "text": response ?? "Bir hata oluştu."});
+      _messages.add({"sender": "ai", "text": response ?? "An error occurred."});
       _isLoading = false;
     });
     _scrollToBottom();
@@ -191,7 +191,7 @@ class _AiChatPageState extends State<AiChatPage> {
                     child: TextField(
                       controller: _controller,
                       decoration: InputDecoration(
-                        hintText: "Bir şeyler sor...",
+                        hintText: "Ask something...",
                         filled: true,
                         fillColor: const Color(0xFFF5F5F5),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),

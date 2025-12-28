@@ -37,7 +37,7 @@ class _TrendMatchTestPageState extends State<TrendMatchTestPage> {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid == null) {
-        throw Exception('Kullanıcı oturumu yok. Lütfen giriş yap.');
+        throw Exception('No user session. Please log in.');
       }
 
       // 1) En güncel trend belgesini çek
@@ -48,7 +48,7 @@ class _TrendMatchTestPageState extends State<TrendMatchTestPage> {
           .get();
 
       if (trendSnap.docs.isEmpty) {
-        throw Exception('Trends koleksiyonunda veri yok.');
+        throw Exception('No data in trends collection.');
       }
 
       final latest = trendSnap.docs.first.data();
@@ -184,13 +184,13 @@ class _TrendMatchTestPageState extends State<TrendMatchTestPage> {
         'shoes': p.shoes['id'],
         'outer': p.outer?['id'],
       },
-      'rationale': 'Trend "${p.trend}" ile etiket/renk/mevsim uyumu.',
+      'rationale': 'Match with trend "${p.trend}" by tag/color/season.',
       'createdAt': FieldValue.serverTimestamp(),
     });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kombin kaydedildi')),
+        const SnackBar(content: Text('Outfit saved')),
       );
     }
   }
@@ -206,7 +206,7 @@ class _TrendMatchTestPageState extends State<TrendMatchTestPage> {
     if (_error != null) {
       return Scaffold(
         appBar: const _AppBarTitle(),
-        body: Center(child: Text('Hata: $_error')),
+        body: Center(child: Text('Error: $_error')),
       );
     }
 
@@ -217,7 +217,7 @@ class _TrendMatchTestPageState extends State<TrendMatchTestPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Trendler (${_trends.length})',
+            Text('Trends (${_trends.length})',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Wrap(
@@ -228,11 +228,11 @@ class _TrendMatchTestPageState extends State<TrendMatchTestPage> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Text('Önerilen Kombinler (${_proposals.length})',
+            Text('Suggested Outfits (${_proposals.length})',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (_proposals.isEmpty)
-              const Text('Henüz eşleşme bulunamadı. Gardıroba farklı kategoriler ekleyin.'),
+              const Text('No matches found yet. Add different categories to your wardrobe.'),
             ..._proposals.map((p) => _ProposalCard(
               p: p,
               onSave: () => _saveOutfit(p),
@@ -304,19 +304,19 @@ class _ProposalCard extends StatelessWidget {
             Text('Trend: ${p.trend}',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
-            Text('Skor: ${p.score}'),
+            Text('Score: ${p.score}'),
             const Divider(height: 16),
-            _line('Üst', p.top),
-            _line('Alt', p.bottom),
-            _line('Ayakkabı', p.shoes),
-            if (p.outer != null) _line('Dış', p.outer!),
+            _line('Top', p.top),
+            _line('Bottom', p.bottom),
+            _line('Shoes', p.shoes),
+            if (p.outer != null) _line('Outer', p.outer!),
             const SizedBox(height: 8),
             Row(
               children: [
                 ElevatedButton.icon(
                   onPressed: onSave,
                   icon: const Icon(Icons.save),
-                  label: const Text('Kaydet'),
+                  label: const Text('Save'),
                 ),
               ],
             ),

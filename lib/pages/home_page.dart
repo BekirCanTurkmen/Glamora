@@ -84,17 +84,17 @@ class _HomePageState extends State<HomePage> {
       if (snap.docs.isNotEmpty) {
         inventoryList = snap.docs.map((d) {
           final data = d.data();
-          final category = data['category'] ?? 'Kategori Yok';
-          final color = data['colorLabel'] ?? 'Renk Yok';
+          final category = data['category'] ?? 'Uncategorized';
+          final color = data['colorLabel'] ?? 'Unknown';
           final brand = data['brand'] ?? '';
-          return "ID: ${d.id}, Kategori: $category, Renk: $color, Marka: $brand";
+          return "ID: ${d.id}, Category: $category, Color: $color, Brand: $brand";
         }).toList();
       }
 
       if (inventoryList.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("HATA: Dolap boş! Önce kıyafet ekleyin.")),
+            const SnackBar(content: Text("ERROR: Wardrobe is empty! Please add clothes first.")),
           );
         }
         // İşlem bitti, loading kapat
@@ -178,10 +178,10 @@ class _HomePageState extends State<HomePage> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text("AI yanıtı beklenenden farklı geldi. Lütfen tekrar deneyin."),
+                content: const Text("AI response was unexpected. Please try again."),
                 backgroundColor: Colors.orange,
                 action: SnackBarAction(
-                  label: 'TEKRAR DENE',
+                  label: 'TRY AGAIN',
                   textColor: Colors.white,
                   onPressed: () => _generateSmartOutfit(context),
                 ),
@@ -193,7 +193,7 @@ class _HomePageState extends State<HomePage> {
           // Diğer hatalar
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Beklenmeyen bir hata oluştu.")),
+              const SnackBar(content: Text("An unexpected error occurred.")),
             );
           }
           print('❌ Unexpected Error: $e');
@@ -202,13 +202,13 @@ class _HomePageState extends State<HomePage> {
         // AI yanıt vermedi
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("AI şu anda yanıt veremiyor. Lütfen daha sonra tekrar deneyin.")),
+            const SnackBar(content: Text("AI is currently unavailable. Please try again later.")),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Bir hata oluştu: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("An error occurred: $e")));
       }
     } finally {
       // 6. İşlem bitti (Başarılı veya Hatalı), Loading'i kapat
@@ -272,7 +272,7 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.more_vert, color: GlamoraColors.deepNavy),
             color: Colors.white,
             onSelected: (v) async { if (v == 'logout') await _logout(context); },
-            itemBuilder: (_) => [const PopupMenuItem(value: 'logout', child: Text("Log Out"))],
+            itemBuilder: (_) => [const PopupMenuItem(value: 'logout', child: Text("Log Out", style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)))],
           ),
         ],
       ),

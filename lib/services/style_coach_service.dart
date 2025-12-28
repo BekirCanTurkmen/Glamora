@@ -242,15 +242,23 @@ Lütfen aşağıdaki formatta JSON yanıt ver (Türkçe):
     final weatherText = weather ?? 'normal hava';
 
     final prompt = '''
-Gardıroptaki parçalardan $occasionText için, $weatherText durumuna uygun BİR kombin öner.
+Sen profesyonel bir moda stilistisin. Aşağıdaki gardırop envanterini kullanarak "$occasionText" durumu ve "$weatherText" hava koşulu için en şık ve uyumlu BİREYSEL bir kombin oluştur.
 
+GARDIROP ENVANTERİ:
 $wardrobeContext
 
-Sadece aşağıdaki JSON formatında yanıt ver:
+KURALLAR:
+1. Kesinlikle "TAM BİR KOMBİN" oluştur (Alt + Üst + Ayakkabı) veya (Elbise + Ayakkabı).
+2. Sadece gardıropta OLAN parçaları kullan.
+3. Renk uyumuna dikkat et (Ton sür ton, kontrast veya tamamlayıcı renkler).
+4. Hava durumunu dikkate al (Soğuksa mont/ceket ekle).
+5. "Top", "Bottom", "Shoes", "Outerwear" (gerekirse), "Accessories" (gerekirse) kategorilerinden seçim yap.
+
+YANIT FORMATI (SADECE JSON):
 {
-  "outfitName": "Kombin adı",
-  "items": ["parça1", "parça2", "parça3"],
-  "reason": "Neden bu kombini önerdiğin"
+  "outfitName": "Kombin için havalı, yaratıcı bir isim (örn: 'Şehirli Modern', 'Rahat Haftasonu')",
+  "items": ["Seçilen Parça 1 Tam Adı", "Seçilen Parça 2 Tam Adı", "Seçilen Parça 3 Tam Adı"],
+  "reason": "Neden bu parçaları seçtiğini, stil ipuçlarını ve renk uyumunu anlatan profesyonel bir açıklama (2-3 cümle)."
 }
 ''';
 

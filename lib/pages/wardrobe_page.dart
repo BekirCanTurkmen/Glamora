@@ -41,7 +41,7 @@ class _WardrobePageState extends State<WardrobePage>
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("Rastgele kıyafetler ekleniyor (orta bölge renk analizi)..."),
+        content: Text("Adding random clothes (center region color analysis)..."),
         duration: Duration(milliseconds: 1500),
       ),
     );
@@ -160,7 +160,7 @@ class _WardrobePageState extends State<WardrobePage>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("✅ +5 demo item eklendi (renkler doğru algılandı)"),
+          content: Text("✅ +5 demo items added (colors detected correctly)"),
         ),
       );
     }
@@ -219,12 +219,12 @@ class _WardrobePageState extends State<WardrobePage>
         ),
         actions: [
           IconButton(
-            tooltip: "Rastgele Kıyafet Ekle",
+            tooltip: "Add Random Clothes",
             icon: const Icon(Icons.playlist_add),
             onPressed: _addDemoData, 
           ),
           IconButton(
-            tooltip: "Yeni Ekle",
+            tooltip: "Add New",
             icon: const Icon(Icons.add),
             onPressed: () {
                Navigator.push(context, MaterialPageRoute(builder: (_) => const PhotoUploader()));
