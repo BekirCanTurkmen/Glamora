@@ -13,22 +13,93 @@ class WeatherCard extends StatefulWidget {
 }
 
 class _WeatherCardState extends State<WeatherCard> {
-  String? city;           // UI’da gösterilen şehir
+  String? city; // UI’da gösterilen şehir
   String? temperature;
   String? description;
   bool loading = false;
 
   final List<String> cities = [
-    'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
-    'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
-    'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli',
-    'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir', 'Gaziantep',
-    'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul', 'İzmir',
-    'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kırıkkale',
-    'Kırklareli', 'Kırşehir', 'Kilis', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
-    'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye', 'Rize',
-    'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas', 'Şanlıurfa', 'Şırnak', 'Tekirdağ',
-    'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
+    'Adana',
+    'Adıyaman',
+    'Afyonkarahisar',
+    'Ağrı',
+    'Aksaray',
+    'Amasya',
+    'Ankara',
+    'Antalya',
+    'Ardahan',
+    'Artvin',
+    'Aydın',
+    'Balıkesir',
+    'Bartın',
+    'Batman',
+    'Bayburt',
+    'Bilecik',
+    'Bingöl',
+    'Bitlis',
+    'Bolu',
+    'Burdur',
+    'Bursa',
+    'Çanakkale',
+    'Çankırı',
+    'Çorum',
+    'Denizli',
+    'Diyarbakır',
+    'Düzce',
+    'Edirne',
+    'Elazığ',
+    'Erzincan',
+    'Erzurum',
+    'Eskişehir',
+    'Gaziantep',
+    'Giresun',
+    'Gümüşhane',
+    'Hakkari',
+    'Hatay',
+    'Iğdır',
+    'Isparta',
+    'İstanbul',
+    'İzmir',
+    'Kahramanmaraş',
+    'Karabük',
+    'Karaman',
+    'Kars',
+    'Kastamonu',
+    'Kayseri',
+    'Kırıkkale',
+    'Kırklareli',
+    'Kırşehir',
+    'Kilis',
+    'Kocaeli',
+    'Konya',
+    'Kütahya',
+    'Malatya',
+    'Manisa',
+    'Mardin',
+    'Mersin',
+    'Muğla',
+    'Muş',
+    'Nevşehir',
+    'Niğde',
+    'Ordu',
+    'Osmaniye',
+    'Rize',
+    'Sakarya',
+    'Samsun',
+    'Siirt',
+    'Sinop',
+    'Sivas',
+    'Şanlıurfa',
+    'Şırnak',
+    'Tekirdağ',
+    'Tokat',
+    'Trabzon',
+    'Tunceli',
+    'Uşak',
+    'Van',
+    'Yalova',
+    'Yozgat',
+    'Zonguldak',
   ];
 
   // 🌤️ API'den hava durumu çek
@@ -40,15 +111,31 @@ class _WeatherCardState extends State<WeatherCard> {
     try {
       final url = Uri.parse('https://wttr.in/$cityName?format=j1');
       final response = await http.get(url);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
           temperature = data['current_condition'][0]['temp_C'];
           description = data['current_condition'][0]['weatherDesc'][0]['value'];
+          loading = false;
+        });
+      } else {
+        // API hatası
+        setState(() {
+          temperature = null;
+          description = "Unable to fetch weather data";
+          loading = false;
         });
       }
-    } catch (_) {}
-    setState(() => loading = false);
+    } catch (e) {
+      // Bağlantı hatası veya parse hatası
+      setState(() {
+        temperature = null;
+        description = "Error: ${e.toString()}";
+        loading = false;
+      });
+      print('Weather fetch error: $e'); // Debug için
+    }
   }
 
   // 📍 Konumdan şehir bul ve ekranda göster
@@ -64,12 +151,15 @@ class _WeatherCardState extends State<WeatherCard> {
     if (permission == LocationPermission.deniedForever) return;
 
     final position = await Geolocator.getCurrentPosition();
-    List<Placemark> placemarks =
-    await placemarkFromCoordinates(position.latitude, position.longitude);
+    List<Placemark> placemarks = await placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+    );
 
     if (placemarks.isNotEmpty) {
       final placemark = placemarks.first;
-      final cityName = placemark.locality ?? placemark.administrativeArea ?? "Unknown";
+      final cityName =
+          placemark.locality ?? placemark.administrativeArea ?? "Unknown";
       final countryName = placemark.country ?? "";
 
       // 🏙️ Şehri UI’da hemen gösterelim
@@ -81,7 +171,6 @@ class _WeatherCardState extends State<WeatherCard> {
       await fetchWeather(cityName);
     }
   }
-
 
   // 🔹 Şehir seçici (tam güvenli)
   void _showCityPicker() {
@@ -193,37 +282,35 @@ class _WeatherCardState extends State<WeatherCard> {
           child: loading
               ? const Center(child: CircularProgressIndicator())
               : Column(
-            children: [
-              Text(
-                city != null
-                    ? "📍 $city"
-                    : "Tap to check the weather",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: GlamoraColors.deepNavy,
+                  children: [
+                    Text(
+                      city != null ? "📍 $city" : "Tap to check the weather",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: GlamoraColors.deepNavy,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (temperature != null)
+                      Text(
+                        "$temperature°C",
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: GlamoraColors.deepNavy,
+                        ),
+                      ),
+                    if (description != null)
+                      Text(
+                        description!,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.black87,
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              if (temperature != null)
-                Text(
-                  "$temperature°C",
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: GlamoraColors.deepNavy,
-                  ),
-                ),
-              if (description != null)
-                Text(
-                  description!,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.black87,
-                  ),
-                ),
-            ],
-          ),
         ),
       ),
     );
