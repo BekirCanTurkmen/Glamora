@@ -12,15 +12,6 @@ A Flutter app for managing your wardrobe digitally. Upload your clothes, get out
 - **Trend Matching** - Test how your style matches current trends
 - **Weather** - Get suggestions based on local weather
 
-## Screenshots
-
-| Home | Wardrobe | AI Chat |
-|:---:|:---:|:---:|
-| ![Home](screenshots/home.png) | ![Wardrobe](screenshots/wardrobe.png) | ![AI Chat](screenshots/ai_chat.png) |
-
-| Calendar | Color Analysis | Friends |
-|:---:|:---:|:---:|
-| ![Calendar](screenshots/calendar.png) | ![Colors](screenshots/colors.png) | ![Friends](screenshots/friends.png) |
 
 ## Tech Stack
 
@@ -77,17 +68,22 @@ cd Glamora
 flutter pub get
 ```
 
-3. Set up Firebase
-```bash
-firebase login
-dart pub global activate flutterfire_cli
-flutterfire configure
+3. Create a `.env` file in the root directory with your API key
+```
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 4. Run
 ```bash
 flutter run
 ```
+
+> **Note:** Firebase configuration (`firebase_options.dart`) is already included in the project. If you want to use your own Firebase project:
+> ```bash
+> firebase login
+> dart pub global activate flutterfire_cli
+> flutterfire configure
+> ```
 
 ## Platforms
 
